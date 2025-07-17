@@ -1,4 +1,5 @@
-use std::io;
+use std::fs::File;
+use std::io::{self, BufRead, BufReader};
 use std::process::{Command, Output};
 
 #[derive(Debug, Clone)]
@@ -18,7 +19,7 @@ pub fn get_ips(router_ip: Ip) -> Result<Vec<Ip>, io::Error> {
         Ok(_) => println!("Nmap scann success"),
         Err(message) => { Err(io::Error::new(io::ErrorKind::NotFound, message)) }?,
     };
-    Ok(Vec::new())
+	Ok(Vec::new())
 }
 
 fn run_nmap_script(router_ip: Ip) -> Result<Output, io::Error> {
@@ -26,9 +27,21 @@ fn run_nmap_script(router_ip: Ip) -> Result<Output, io::Error> {
         .args(&[
             "scripts/nmap-scan.sh",
             match router_ip.get_main_part() {
-                "" => return Err(io::Error::new(io::ErrorKind::NotFound, "")),
+                "" => return Err(io::Error::new(io::ErrorKind::NotFound, "Must be set IP")),
                 s => s,
             },
         ])
         .output()
+}
+
+
+fn extract_ip(input: &str) -> Option<String> {
+    let start = input.rfind('(')? + 1;
+    let end = input.rfind(')')?;
+
+    if end > start {
+        Some(input[start..end].to_string())
+    } else {
+        None
+    }
 }

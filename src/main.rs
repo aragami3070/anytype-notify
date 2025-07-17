@@ -11,8 +11,6 @@ fn main() {
 
     let local_ip = Ip(std::env::var("LOCAL_IP").expect("LOCAL_IP must be set in .env."));
 
-    println!("local_ip: {}", local_ip.0);
-
     let list_ip = match scanner::get_ips(local_ip) {
         Ok(l) => l,
         Err(message) => {
