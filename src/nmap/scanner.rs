@@ -19,7 +19,11 @@ pub fn get_ips(router_ip: Ip) -> Result<Vec<Ip>, io::Error> {
         Ok(_) => println!("Nmap scann success"),
         Err(message) => { Err(io::Error::new(io::ErrorKind::NotFound, message)) }?,
     };
-	Ok(Vec::new())
+
+    match parse_nmap_result() {
+        Ok(list_ip) => Ok(list_ip),
+        Err(message) => { Err(io::Error::new(io::ErrorKind::NotFound, message)) }?,
+    }
 }
 
 fn run_nmap_script(router_ip: Ip) -> Result<Output, io::Error> {
@@ -27,13 +31,46 @@ fn run_nmap_script(router_ip: Ip) -> Result<Output, io::Error> {
         .args(&[
             "scripts/nmap-scan.sh",
             match router_ip.get_main_part() {
-                "" => return Err(io::Error::new(io::ErrorKind::NotFound, "Must be set IP")),
+                "" => return Err(io::Error::new(io::ErrorKind::NotFound, "Must be set IP.")),
                 s => s,
             },
         ])
         .output()
 }
 
+fn parse_nmap_result() -> Result<Vec<Ip>, io::Error> {
+    let file = match File::open("assets/nmap-scan-result.txt") {
+        Ok(f) => f,
+        Err(message) => return Err(io::Error::new(io::ErrorKind::NotFound, message)),
+    };
+    let reader = BufReader::new(file);
+
+    let mut list_ip: Vec<Ip> = Vec::new();
+
+    for line in reader.lines() {
+        let text = match line {
+            Ok(t) => t,
+            Err(message) => return Err(io::Error::new(io::ErrorKind::NotFound, message)),
+        };
+
+        let ip = match text.find("Nmap scan report for") {
+            Some(_) => extract_ip(text.trim()),
+            None => continue,
+        };
+
+        match ip {
+            Some(i) => list_ip.push(Ip(i)),
+            None => {
+                return Err(io::Error::new(
+                    io::ErrorKind::NotFound,
+                    "File nmap-scan-result.txt contains invalid strings.",
+                ));
+            }
+        };
+    }
+
+    Ok(list_ip)
+}
 
 fn extract_ip(input: &str) -> Option<String> {
     let start = input.rfind('(')? + 1;
