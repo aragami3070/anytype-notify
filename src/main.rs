@@ -14,12 +14,12 @@ fn main() {
     let list_ip = match scanner::get_ips(local_ip) {
         Ok(l) => l,
         Err(message) => {
-            eprintln!("Error: {}", message);
+            eprintln!("Error: {message}");
             process::exit(1);
         }
     };
 
-	for ip in list_ip {
-	    println!("ip: {}", ip.0);
-	}
+    for ip in list_ip {
+        println!("ip: {}", ip.0);
+    }
 }

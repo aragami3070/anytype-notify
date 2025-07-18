@@ -7,10 +7,12 @@ pub struct Ip(pub String);
 
 impl Ip {
     fn get_main_part(&self) -> &str {
-        match self.0.rfind('.').map(|idx| &self.0[..idx]) {
-            Some(s) => s,
-            None => "",
+        let ip_parts: Vec<&str> = self.0.split('.').collect();
+        if ip_parts.len() != 4 {
+            return "";
         }
+        let str_length = ip_parts[0].len() + ip_parts[1].len() + ip_parts[2].len() + 2;
+        &self.0[..str_length]
     }
 }
 
@@ -28,7 +30,7 @@ pub fn get_ips(router_ip: Ip) -> Result<Vec<Ip>, io::Error> {
 
 fn run_nmap_script(router_ip: Ip) -> Result<Output, io::Error> {
     Command::new("sh")
-        .args(&[
+        .args([
             "scripts/nmap-scan.sh",
             match router_ip.get_main_part() {
                 "" => return Err(io::Error::new(io::ErrorKind::NotFound, "Must be set IP.")),
