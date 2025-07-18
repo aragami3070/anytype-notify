@@ -82,3 +82,18 @@ fn extract_ip(input: &str) -> Option<String> {
         None
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rstest::rstest;
+
+    #[rstest]
+    #[case(Ip("test".to_string()), "")]
+    #[case(Ip("0.0.0.0".to_string()), "0.0.0")]
+    #[case(Ip("192.168.50.19".to_string()), "192.168.50")]
+    #[case(Ip("192.168.50".to_string()), "")]
+    fn getting_main_part(#[case] ip: Ip, #[case] expected: &str) {
+        assert_eq!(ip.get_main_part(), expected);
+    }
+}
