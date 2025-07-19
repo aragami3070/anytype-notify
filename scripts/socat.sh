@@ -27,3 +27,7 @@ WantedBy=multi-user.target\n
 
 # Записываем настройки сервиса
 sudo -i echo -e "$service" > /etc/systemd/system/tunnel.service
+
+# Перезапускаем сервис
+sudo systemctl daemon-reload
+sudo systemctl enable --now tunnel.service
