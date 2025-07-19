@@ -78,11 +78,16 @@ fn extract_ip(input: &str) -> Option<String> {
     let start = input.rfind('(')? + 1;
     let end = input.rfind(')')?;
 
-    if end > start {
-        Some(input[start..end].to_string())
-    } else {
-        None
+   if start >= end {
+        return None;
     }
+
+    let ip = &input[start..end];
+    if ip.split('.').count() != 4 {
+        return None;
+    }
+
+    Some(ip.to_string())
 }
 
 #[cfg(test)]
@@ -99,13 +104,13 @@ mod tests {
         assert_eq!(ip.get_main_part(), expected);
     }
 
-	#[rstest]
-	#[case("Nmap scan report for SomeComputer (192.168.50.228)", Some("192.168.50.228".to_string()))]
-	#[case("Nmap scan report for SomeComputer (test)", None)]
-	#[case("Nmap scan report for SomeComputer (192.168.50.228", None)]
-	#[case("Nmap scan report for SomeComputer 192.168.50.228)", None)]
-	#[case("Nmap scan report for SomeComputer 192.168.50.228)", None)]
-	#[case("Nmap scan report for SomeComputer", None)]
+    #[rstest]
+    #[case("Nmap scan report for SomeComputer (192.168.50.228)", Some("192.168.50.228".to_string()))]
+    #[case("Nmap scan report for SomeComputer (test)", None)]
+    #[case("Nmap scan report for SomeComputer (192.168.50.228", None)]
+    #[case("Nmap scan report for SomeComputer 192.168.50.228)", None)]
+    #[case("Nmap scan report for SomeComputer 192.168.50.228)", None)]
+    #[case("Nmap scan report for SomeComputer", None)]
     fn extracting_ip(#[case] ip: &str, #[case] expected: Option<String>) {
         assert_eq!(extract_ip(ip), expected);
     }
