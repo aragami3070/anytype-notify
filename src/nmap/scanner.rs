@@ -98,4 +98,15 @@ mod tests {
     fn getting_main_part(#[case] ip: Ip, #[case] expected: &str) {
         assert_eq!(ip.get_main_part(), expected);
     }
+
+	#[rstest]
+	#[case("Nmap scan report for SomeComputer (192.168.50.228)", Some("192.168.50.228".to_string()))]
+	#[case("Nmap scan report for SomeComputer (test)", None)]
+	#[case("Nmap scan report for SomeComputer (192.168.50.228", None)]
+	#[case("Nmap scan report for SomeComputer 192.168.50.228)", None)]
+	#[case("Nmap scan report for SomeComputer 192.168.50.228)", None)]
+	#[case("Nmap scan report for SomeComputer", None)]
+    fn extracting_ip(#[case] ip: &str, #[case] expected: Option<String>) {
+        assert_eq!(extract_ip(ip), expected);
+    }
 }
