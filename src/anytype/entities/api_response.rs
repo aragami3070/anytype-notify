@@ -68,4 +68,3 @@ pub struct SelectTag {
     pub name: String,
     pub object: Option<String>,
 }
-
