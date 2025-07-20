@@ -18,7 +18,12 @@ pub async fn fetch(url: &String, token: &String) -> Result<ApiResponse, Box<dyn 
         }
     };
 
-    let body = response.json::<ApiResponse>().await?;
+    let body = match response.json::<ApiResponse>().await {
+        Ok(b) => b,
+        Err(message) => {
+            return Err(Box::new(message));
+        }
+    };
 
     Ok(body)
 }
