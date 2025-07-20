@@ -1,6 +1,6 @@
-mod parser;
+mod anytype;
 
-use parser::parser::fetch;
+use anytype::parser::fetch;
 
 use dotenv::dotenv;
 

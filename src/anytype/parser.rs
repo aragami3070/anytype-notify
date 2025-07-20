@@ -1,4 +1,4 @@
-use crate::parser::entities::api_response::ApiResponse;
+use crate::anytype::entities::api_response::ApiResponse;
 
 use reqwest::Client;
 use reqwest::header::HeaderMap;
