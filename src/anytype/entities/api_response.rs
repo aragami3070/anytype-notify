@@ -1,11 +1,11 @@
 use serde::Deserialize;
 
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 pub struct ApiResponse {
     pub data: Vec<AnytypeObject>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 pub struct AnytypeObject {
     pub archived: bool,
     pub icon: Option<Icon>,
@@ -20,13 +20,13 @@ pub struct AnytypeObject {
     pub type_field: Option<ObjectType>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 pub struct Icon {
     pub emoji: Option<String>,
     pub format: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 pub struct ObjectType {
     pub archived: Option<bool>,
     pub icon: Option<Icon>,
@@ -39,7 +39,7 @@ pub struct ObjectType {
     pub properties: Option<Vec<Property>>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 pub struct Property {
     pub format: String,
     pub id: String,
@@ -60,7 +60,7 @@ pub struct Property {
     pub multi_select: Option<Vec<SelectTag>>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 pub struct SelectTag {
     pub color: String,
     pub id: String,
