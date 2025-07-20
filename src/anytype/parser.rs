@@ -9,13 +9,14 @@ pub async fn fetch(url: &String, token: &String) -> Result<ApiResponse, Box<dyn 
 
     let mut headers = HeaderMap::new();
     headers.insert("Accept", "application/json".parse()?);
-    headers.insert("Authorization", format!("Bearer {}", token).parse()?);
+    headers.insert("Authorization", format!("Bearer {token}").parse()?);
 
-    let response = client
-        .get(url)
-        .headers(headers)
-        .send()
-        .await?;
+    let response = match client.get(url).headers(headers).send().await {
+        Ok(r) => r,
+        Err(message) => {
+            return Err(Box::new(message));
+        }
+    };
 
     let body = response.json::<ApiResponse>().await?;
 
