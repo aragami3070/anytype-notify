@@ -42,7 +42,7 @@ pub struct Identifier {
 }
 
 #[allow(dead_code)]
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct WhoAmI {
     pub device_id: DeviceId,
     pub user_id: UserId,

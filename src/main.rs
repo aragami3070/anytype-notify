@@ -9,6 +9,7 @@ use anytype::parser::fetch;
 
 use dotenv::dotenv;
 
+use crate::matrix::client::{set_client};
 
 #[derive(Clone)]
 pub struct Url(pub String);
@@ -32,4 +33,19 @@ async fn main() {
     let matrix_server =
         Url(std::env::var("MATRIX_SERVER").expect("MATRIX_SERVER must be set in .env."));
 
+    let matrix_client = match set_client(matrix_server).await {
+        Ok(cl) => cl,
+        Err(message) => {
+            eprintln!("Error: {message}");
+            process::exit(1);
+        }
+    };
+
+	println!("Who am I: {:?}", match matrix_client.auth().who_am_i().await {
+        Ok(cl) => cl,
+        Err(message) => {
+            eprintln!("Error: {message}");
+            process::exit(1);
+        }
+	});
 }
