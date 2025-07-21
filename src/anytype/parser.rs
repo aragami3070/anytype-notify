@@ -46,8 +46,7 @@ async fn filter_objects_by_types(
 
     if filtered_objects.is_empty() {
         return Err(format!(
-            "No objects found with required types: {:?}",
-            required_types
+            "No objects found with required types: {required_types:?}"
         ));
     }
 
@@ -65,7 +64,7 @@ pub async fn get_anytype_objects(
             data
         }
         Err(message) => {
-            return Err(message.into());
+            return Err(message);
         }
     };
 
