@@ -149,3 +149,26 @@ impl Client {
         api::auth::Auth::new(self.clone())
     }
 }
+
+async fn set_client_with_login(matrix_server: Url) -> Result<Client, Box<dyn Error>> {
+    let user_name = User(std::env::var("MATRIX_USER").expect("MATRIX_USER must be set in .env."));
+    let password =
+        Password(std::env::var("MATRIX_PASSWORD").expect("MATRIX_PASSWORD must be set in .env."));
+
+    let mut matrix_client = match Client::new(matrix_server) {
+        Ok(cl) => cl,
+        Err(message) => return Err(message),
+    };
+
+    matrix_client = match matrix_client.auth().login(user_name, password).await {
+        Ok(m) => m,
+        Err(message) => return Err(message),
+    };
+
+    match matrix_client.save_tokens() {
+        Ok(_) => println!("Matrix client set"),
+        Err(message) => return Err(message),
+    };
+
+    Ok(matrix_client)
+}
