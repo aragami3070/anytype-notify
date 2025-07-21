@@ -47,11 +47,7 @@ impl Auth {
         Auth { client }
     }
 
-    pub async fn login(
-        &self,
-        user: User,
-        password: Password,
-    ) -> Result<LoginResponse, Box<dyn Error>> {
+    pub async fn login(mut self, user: User, password: Password) -> Result<Client, Box<dyn Error>> {
         let mut headers = HeaderMap::new();
         headers.insert(
             "Accept",
@@ -61,12 +57,13 @@ impl Auth {
             },
         );
 
-        let identifier = Identifier {
+        let identifier_val = Identifier {
             type_: "m.id.user".to_string(),
             user: user.0,
         };
+
         let body = LoginRequest {
-            identifier: identifier,
+            identifier: identifier_val,
             device_name: Some("anytype-bot docker".to_string()),
             password: password.0,
             login_type: "m.login.password".to_string(),
@@ -87,6 +84,9 @@ impl Auth {
             Err(message) => return Err(Box::new(message)),
         };
 
-        Ok(result)
+        self.client
+            .set_tokens(result.access_token.clone(), result.refresh_token.clone());
+
+        Ok(self.client)
     }
 }
