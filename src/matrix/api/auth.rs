@@ -39,12 +39,14 @@ pub struct Identifier {
 }
 
 #[derive(Deserialize)]
+#[allow(dead_code)]
 pub struct WhoAmI {
     pub device_id: DeviceId,
     pub user_id: UserId,
 }
 
 #[derive(Deserialize)]
+#[allow(dead_code)]
 pub struct NewTokens {
     access_token: Token,
     expires_in_ms: i64,
@@ -65,6 +67,10 @@ impl Auth {
         Auth { client }
     }
 
+    /// Эта функция делает post запрос к /_matrix/client/v3/login для входа в аккаунт по имени
+    /// и паролю ползователя
+    ///
+    /// Добавляет в Client полученные токены и возвращает Client
     pub async fn login(mut self, user: User, password: Password) -> Result<Client, Box<dyn Error>> {
         let mut headers = HeaderMap::new();
         headers.insert(
@@ -108,6 +114,8 @@ impl Auth {
         Ok(self.client)
     }
 
+    /// Эта функция делает get запрос к /_matrix/client/v3/account/whoami для получения данных о
+    /// данном сеансе. Если токен истек вернет ошибку
     pub async fn who_am_i(&self) -> Result<WhoAmI, Box<dyn Error>> {
         let mut headers = HeaderMap::new();
         headers.insert(
@@ -142,6 +150,9 @@ impl Auth {
         Ok(result)
     }
 
+    /// Эта функция делает post запрос к /_matrix/client/v3/refresh для обновления токенов.
+    ///
+    /// Добавляет в Client полученные токены и возвращает Client
     pub async fn refresh(mut self) -> Result<Client, Box<dyn Error>> {
         let mut headers = HeaderMap::new();
         headers.insert(
