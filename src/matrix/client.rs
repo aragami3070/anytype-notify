@@ -172,3 +172,29 @@ async fn set_client_with_login(matrix_server: Url) -> Result<Client, Box<dyn Err
 
     Ok(matrix_client)
 }
+
+async fn load_client_from_file(matrix_server: &Url) -> Result<Client, Box<dyn Error>> {
+    let mut matrix_client: Client = match Client::new_from_file(matrix_server.clone()) {
+        Ok(cl) => cl,
+        Err(message) => return Err(message),
+    };
+
+    println!("WhoAmI...");
+    if matrix_client.auth().who_am_i().await.is_ok() {
+        println!("Matrix client set");
+        return Ok(matrix_client);
+    }
+
+    println!("RefreshToken...");
+    matrix_client = match matrix_client.auth().refresh().await {
+        Ok(cl) => cl,
+        Err(message) => return Err(message),
+    };
+
+    match matrix_client.save_tokens() {
+        Ok(_) => println!("Matrix client set"),
+        Err(message) => return Err(message),
+    };
+    Ok(matrix_client)
+}
+
