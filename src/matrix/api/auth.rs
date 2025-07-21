@@ -38,6 +38,12 @@ pub struct Identifier {
     user: String,
 }
 
+#[derive(Deserialize)]
+pub struct WhoAmI {
+	pub device_id: DeviceId,
+	pub user_id: UserId,
+}
+
 pub struct Auth {
     pub client: Client,
 }
@@ -89,4 +95,31 @@ impl Auth {
 
         Ok(self.client)
     }
+
+	pub async fn who_am_i(&self) -> Result<WhoAmI, Box<dyn Error>> {
+        let mut headers = HeaderMap::new();
+        headers.insert(
+            "Accept",
+            match "application/json".parse() {
+                Ok(s) => s,
+                Err(message) => return Err(Box::new(message)),
+            },
+        );
+
+        let response = match self
+            .client
+            .get("/_matrix/client/v3/login", headers)
+            .await
+        {
+            Ok(resp) => resp,
+            Err(message) => return Err(message),
+        };
+
+		let result = match response.json::<WhoAmI>().await {
+            Ok(resp) => resp,
+            Err(message) => return Err(Box::new(message)),
+		};
+
+		Ok(result)
+	}
 }
