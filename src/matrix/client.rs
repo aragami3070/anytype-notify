@@ -27,4 +27,25 @@ impl Client {
         self.refresh_token = refresh_token;
     }
 
+    pub async fn post<T: serde::Serialize>(
+        &self,
+        path: &str,
+        headers: HeaderMap,
+        body: T,
+    ) -> Result<Response, Box<dyn Error>> {
+        let mut url = self.host.0.clone();
+        url.push_str(path);
+
+        match self
+            .client
+            .post(url.trim())
+            .headers(headers)
+            .json(&body)
+            .send()
+            .await
+        {
+            Ok(resp) => Ok(resp),
+            Err(message) => Err(Box::new(message)),
+        }
+    }
 }
