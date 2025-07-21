@@ -1,4 +1,9 @@
-use std::{error::Error, fs::{self, File}, io::Write, path::Path};
+use std::{
+    error::Error,
+    fs::{self, File},
+    io::{BufRead, BufReader, Write},
+    path::Path,
+};
 
 use reqwest::{Response, header::HeaderMap};
 
@@ -22,15 +27,40 @@ impl Client {
         })
     }
 
-    pub fn save_tokens(&self) -> Result<&str, Box<dyn Error>>{
-		if !Path::new("assets/").exists() {
-			match fs::create_dir("assets/") {
-			    Ok(_) => {},
-			    Err(message) => {
-					return Err(Box::new(message));
-				},
-			}
-		}
+    pub fn new_from_file(host_val: Url) -> Result<Client, Box<dyn Error>> {
+        let file = match File::open("assets/tokens.txt") {
+            Ok(f) => f,
+            Err(message) => return Err(Box::new(message)),
+        };
+
+        let reader = BufReader::new(file).lines();
+
+        let mut tokens: Vec<Token> = Vec::new();
+        for line in reader {
+            let token_val = match line {
+                Ok(t) => Token(t),
+                Err(message) => return Err(Box::new(message)),
+            };
+            tokens.push(token_val);
+        }
+
+        Ok(Self {
+            host: host_val,
+            client: reqwest::Client::builder().build()?,
+            access_token: tokens[0].clone(),
+            refresh_token: tokens[1].clone(),
+        })
+    }
+
+    pub fn save_tokens(&self) -> Result<&str, Box<dyn Error>> {
+        if !Path::new("assets/").exists() {
+            match fs::create_dir("assets/") {
+                Ok(_) => {}
+                Err(message) => {
+                    return Err(Box::new(message));
+                }
+            }
+        }
 
         let mut token_file =
             File::create("assets/tokens.txt").expect("Error: Should be able to create file");
@@ -41,7 +71,7 @@ impl Client {
             .write_all(self.refresh_token.0.as_bytes())
             .expect("Error: Should be able to write data");
 
-		Ok("Save tokens success")
+        Ok("Save tokens success")
     }
 
     pub fn set_tokens(&mut self, access_token: Token, refresh_token: Token) {
