@@ -27,17 +27,29 @@ async fn main() {
         .filter(|s| !s.is_empty())
         .collect();
 
-    let objects = match get_anytype_objects(&anytype_url.0, &anytype_token.0, &required_types).await {
-        Ok(data) => {
-            data
-        }
+    let objects = match get_anytype_objects(&anytype_url.0, &anytype_token.0, &required_types).await
+    {
+        Ok(data) => data,
         Err(message) => {
-            println!("Error: {}", message);
+            println!("Error: {message}");
             return;
         }
     };
 
     for o in objects.data {
-        println!("{}", o.name);
+        let name = &o.name;
+        let snippet = o.snippet.as_deref().unwrap_or("<no snippet>");
+
+        let date = o
+            .properties
+            .iter()
+            .find(|p| p.key == "created_date")
+            .and_then(|p| p.date.as_deref())
+            .unwrap_or("<no creation date>");
+
+        println!("name: {name}");
+        println!("snippet: {snippet}");
+        println!("creation date: {date}");
+        // println!("{o:#?}");
     }
 }
