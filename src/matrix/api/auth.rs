@@ -1,4 +1,7 @@
-use crate::{Password, Token, User, matrix::client::Client};
+use crate::{
+    Token,
+    matrix::client::{Client, Password, User},
+};
 
 use reqwest::header::HeaderMap;
 use serde::{Deserialize, Serialize};

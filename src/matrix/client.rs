@@ -3,11 +3,20 @@ use std::{
     fs::{self, File},
     io::{BufRead, BufReader, Write},
     path::Path,
+    process,
 };
+
+use tokio::fs::remove_file;
 
 use reqwest::{Response, header::HeaderMap};
 
 use crate::{Token, Url, matrix::api};
+
+#[derive(Clone)]
+pub struct User(pub String);
+
+#[derive(Clone)]
+pub struct Password(pub String);
 
 #[derive(Clone)]
 pub struct Client {
@@ -18,6 +27,7 @@ pub struct Client {
 }
 
 impl Client {
+    /// Функция создания Client с пустыми токенами
     pub fn new(host_val: Url) -> Result<Client, Box<dyn Error>> {
         Ok(Self {
             host: host_val,
@@ -27,6 +37,7 @@ impl Client {
         })
     }
 
+    /// Функция создания Client с токенами из файла assets/tokens.txt
     pub fn new_from_file(host_val: Url) -> Result<Client, Box<dyn Error>> {
         let file = match File::open("assets/tokens.txt") {
             Ok(f) => f,
@@ -52,14 +63,15 @@ impl Client {
         })
     }
 
-	pub fn get_access_token(&self) -> Token {
-		self.access_token.clone()
-	}
+    pub fn get_access_token(&self) -> Token {
+        self.access_token.clone()
+    }
 
-	pub fn get_refresh_token(&self) -> Token {
-		self.refresh_token.clone()
-	}
+    pub fn get_refresh_token(&self) -> Token {
+        self.refresh_token.clone()
+    }
 
+    /// Функция сохранения токенов в файл assets/tokens.txt
     pub fn save_tokens(&self) -> Result<&str, Box<dyn Error>> {
         if !Path::new("assets/").exists() {
             match fs::create_dir("assets/") {
@@ -87,6 +99,7 @@ impl Client {
         self.refresh_token = refresh_token;
     }
 
+    /// Фукнция для отправки post запроса на api матрикса
     pub async fn post<T: serde::Serialize>(
         &self,
         path: &str,
@@ -109,26 +122,18 @@ impl Client {
         }
     }
 
-    pub async fn get(
-        &self,
-        path: &str,
-        headers: HeaderMap,
-    ) -> Result<Response, Box<dyn Error>> {
+    /// Фукнция для отправки get запроса на api матрикса
+    pub async fn get(&self, path: &str, headers: HeaderMap) -> Result<Response, Box<dyn Error>> {
         let mut url = self.host.0.clone();
         url.push_str(path);
 
-        match self
-            .client
-            .get(url.trim())
-            .headers(headers)
-            .send()
-            .await
-        {
+        match self.client.get(url.trim()).headers(headers).send().await {
             Ok(resp) => Ok(resp),
             Err(message) => Err(Box::new(message)),
         }
     }
 
+    /// Взаимодействие с auth частью api матрикса
     pub fn auth(&self) -> api::auth::Auth {
         api::auth::Auth::new(self.clone())
     }
