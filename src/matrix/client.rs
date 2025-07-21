@@ -2,7 +2,7 @@ use std::error::Error;
 
 use reqwest::{Response, header::HeaderMap};
 
-use crate::{Token, Url};
+use crate::{Token, Url, matrix::api};
 
 #[derive(Clone)]
 pub struct Client {
@@ -21,4 +21,10 @@ impl Client {
             refresh_token: Token(String::new()),
         })
     }
+
+    pub fn set_tokens(&mut self, access_token: Token, refresh_token: Token) {
+        self.access_token = access_token;
+        self.refresh_token = refresh_token;
+    }
+
 }
