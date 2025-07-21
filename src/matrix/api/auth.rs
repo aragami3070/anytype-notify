@@ -44,6 +44,13 @@ pub struct WhoAmI {
     pub user_id: UserId,
 }
 
+#[derive(Deserialize)]
+pub struct NewTokens {
+    access_token: Token,
+    expires_in_ms: i64,
+    refresh_token: Token,
+}
+
 pub struct Auth {
     pub client: Client,
 }
@@ -113,7 +120,11 @@ impl Auth {
             },
         );
 
-        let response = match self.client.get("/_matrix/client/v3/account/whoami", headers).await {
+        let response = match self
+            .client
+            .get("/_matrix/client/v3/account/whoami", headers)
+            .await
+        {
             Ok(resp) => resp,
             Err(message) => return Err(message),
         };
@@ -126,4 +137,37 @@ impl Auth {
         Ok(result)
     }
 
+    pub async fn refresh(mut self) -> Result<Client, Box<dyn Error>> {
+        let mut headers = HeaderMap::new();
+        headers.insert(
+            "Accept",
+            match "application/json".parse() {
+                Ok(s) => s,
+                Err(message) => return Err(Box::new(message)),
+            },
+        );
+
+        let response = match self
+            .client
+            .post(
+                "/_matrix/client/v3/refresh",
+                headers,
+                self.client.get_refresh_token().0,
+            )
+            .await
+        {
+            Ok(resp) => resp,
+            Err(message) => return Err(message),
+        };
+
+        let result = match response.json::<NewTokens>().await {
+            Ok(resp) => resp,
+            Err(message) => return Err(Box::new(message)),
+        };
+
+        self.client
+            .set_tokens(result.access_token.clone(), result.refresh_token.clone());
+
+        Ok(self.client)
+    }
 }
