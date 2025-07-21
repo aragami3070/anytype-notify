@@ -198,3 +198,28 @@ async fn load_client_from_file(matrix_server: &Url) -> Result<Client, Box<dyn Er
     Ok(matrix_client)
 }
 
+pub async fn set_client(matrix_server: Url) -> Result<Client, Box<dyn Error>> {
+    let matrix_client: Client;
+    loop {
+        if Path::new("assets/tokens.txt").exists() {
+            matrix_client = match load_client_from_file(&matrix_server).await {
+                Ok(cl) => cl,
+                Err(message) => {
+                    eprintln!("Warn: {message}");
+                    remove_file("assets/tokens.txt").await?;
+                    continue;
+                }
+            };
+            break;
+        } else {
+            println!("Login...");
+            matrix_client = match set_client_with_login(matrix_server).await {
+                Ok(cl) => cl,
+                Err(message) => return Err(message),
+            };
+            break;
+        }
+    }
+
+    Ok(matrix_client)
+}
