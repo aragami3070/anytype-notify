@@ -14,6 +14,12 @@ pub struct Url(pub String);
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Token(pub String);
 
+#[derive(Clone)]
+pub struct User(pub String);
+
+#[derive(Clone)]
+pub struct Password(pub String);
+
 #[tokio::main]
 async fn main() {
     dotenv().ok();
