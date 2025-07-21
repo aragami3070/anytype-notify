@@ -51,6 +51,11 @@ pub struct NewTokens {
     refresh_token: Token,
 }
 
+#[derive(Serialize)]
+pub struct RefreshRequest {
+    pub refresh_token: Token,
+}
+
 pub struct Auth {
     pub client: Client,
 }
@@ -152,7 +157,9 @@ impl Auth {
             .post(
                 "/_matrix/client/v3/refresh",
                 headers,
-                self.client.get_refresh_token().0,
+                RefreshRequest {
+                    refresh_token: self.client.get_refresh_token(),
+                },
             )
             .await
         {
