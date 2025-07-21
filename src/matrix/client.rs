@@ -101,6 +101,26 @@ impl Client {
         }
     }
 
+    pub async fn get(
+        &self,
+        path: &str,
+        headers: HeaderMap,
+    ) -> Result<Response, Box<dyn Error>> {
+        let mut url = self.host.0.clone();
+        url.push_str(path);
+
+        match self
+            .client
+            .get(url.trim())
+            .headers(headers)
+            .send()
+            .await
+        {
+            Ok(resp) => Ok(resp),
+            Err(message) => Err(Box::new(message)),
+        }
+    }
+
     pub fn auth(&self) -> api::auth::Auth {
         api::auth::Auth::new(self.clone())
     }
