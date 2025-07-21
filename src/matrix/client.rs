@@ -1,4 +1,4 @@
-use std::{error::Error, fs::File, io::Write};
+use std::{error::Error, fs::{self, File}, io::Write, path::Path};
 
 use reqwest::{Response, header::HeaderMap};
 
@@ -22,11 +22,27 @@ impl Client {
         })
     }
 
-	pub fn save_tokens(&self) {
-		let mut token_file = File::create("assets/tokens.txt").expect("Should be able to create file");
-		token_file.write_all(format!("{}\n",self.access_token.0).as_bytes()).expect("Should be able to write data");
-		token_file.write_all(self.refresh_token.0.as_bytes()).expect("Should be able to write data");
-	}
+    pub fn save_tokens(&self) -> Result<&str, Box<dyn Error>>{
+		if !Path::new("assets/").exists() {
+			match fs::create_dir("assets/") {
+			    Ok(_) => {},
+			    Err(message) => {
+					return Err(Box::new(message));
+				},
+			}
+		}
+
+        let mut token_file =
+            File::create("assets/tokens.txt").expect("Error: Should be able to create file");
+        token_file
+            .write_all(format!("{}\n", self.access_token.0).as_bytes())
+            .expect("Error: Should be able to write data");
+        token_file
+            .write_all(self.refresh_token.0.as_bytes())
+            .expect("Error: Should be able to write data");
+
+		Ok("Save tokens success")
+    }
 
     pub fn set_tokens(&mut self, access_token: Token, refresh_token: Token) {
         self.access_token = access_token;
