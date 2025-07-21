@@ -52,6 +52,14 @@ impl Client {
         })
     }
 
+	pub fn get_access_token(&self) -> Token {
+		self.access_token.clone()
+	}
+
+	pub fn get_refresh_token(&self) -> Token {
+		self.refresh_token.clone()
+	}
+
     pub fn save_tokens(&self) -> Result<&str, Box<dyn Error>> {
         if !Path::new("assets/").exists() {
             match fs::create_dir("assets/") {
