@@ -48,4 +48,8 @@ impl Client {
             Err(message) => Err(Box::new(message)),
         }
     }
+
+    pub fn auth(&self) -> api::auth::Auth {
+        api::auth::Auth::new(self.clone())
+    }
 }
