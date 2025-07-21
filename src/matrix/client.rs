@@ -1,3 +1,4 @@
+use std::error::Error;
 
 use reqwest::{Response, header::HeaderMap};
 
@@ -9,4 +10,15 @@ pub struct Client {
     client: reqwest::Client,
     access_token: Token,
     refresh_token: Token,
+}
+
+impl Client {
+    pub fn new(host: Url) -> Result<Client, Box<dyn Error>> {
+        Ok(Self {
+            host: host,
+            client: reqwest::Client::builder().build()?,
+            access_token: Token(String::new()),
+            refresh_token: Token(String::new()),
+        })
+    }
 }
