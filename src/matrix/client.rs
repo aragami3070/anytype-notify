@@ -3,7 +3,6 @@ use std::{
     fs::{self, File},
     io::{BufRead, BufReader, Write},
     path::Path,
-    process,
 };
 
 use tokio::fs::remove_file;
@@ -44,22 +43,34 @@ impl Client {
             Err(message) => return Err(Box::new(message)),
         };
 
-        let reader = BufReader::new(file).lines();
+        let mut reader = BufReader::new(file).lines();
 
-        let mut tokens: Vec<Token> = Vec::new();
-        for line in reader {
-            let token_val = match line {
+        let access_t;
+        let refresh_t;
+
+        if let Some(first_line) = reader.next() {
+            access_t = match first_line {
                 Ok(t) => Token(t),
                 Err(message) => return Err(Box::new(message)),
-            };
-            tokens.push(token_val);
+            }
+        } else {
+            return Err("File is empty".into());
+        }
+
+        if let Some(second_line) = reader.next() {
+            refresh_t = match second_line {
+                Ok(t) => Token(t),
+                Err(message) => return Err(Box::new(message)),
+            }
+        } else {
+            return Err("File has only one line".into());
         }
 
         Ok(Self {
             host: host_val,
             client: reqwest::Client::builder().build()?,
-            access_token: tokens[0].clone(),
-            refresh_token: tokens[1].clone(),
+            access_token: access_t,
+            refresh_token: refresh_t,
         })
     }
 

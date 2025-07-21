@@ -41,15 +41,15 @@ pub struct Identifier {
     user: String,
 }
 
-#[derive(Deserialize)]
 #[allow(dead_code)]
+#[derive(Deserialize)]
 pub struct WhoAmI {
     pub device_id: DeviceId,
     pub user_id: UserId,
 }
 
-#[derive(Deserialize)]
 #[allow(dead_code)]
+#[derive(Deserialize)]
 pub struct NewTokens {
     access_token: Token,
     expires_in_ms: i64,
