@@ -1,4 +1,4 @@
-use std::error::Error;
+use std::{error::Error, fs::File, io::Write};
 
 use reqwest::{Response, header::HeaderMap};
 
@@ -13,14 +13,20 @@ pub struct Client {
 }
 
 impl Client {
-    pub fn new(host: Url) -> Result<Client, Box<dyn Error>> {
+    pub fn new(host_val: Url) -> Result<Client, Box<dyn Error>> {
         Ok(Self {
-            host: host,
+            host: host_val,
             client: reqwest::Client::builder().build()?,
             access_token: Token(String::new()),
             refresh_token: Token(String::new()),
         })
     }
+
+	pub fn save_tokens(&self) {
+		let mut token_file = File::create("assets/tokens.txt").expect("Should be able to create file");
+		token_file.write_all(format!("{}\n",self.access_token.0).as_bytes()).expect("Should be able to write data");
+		token_file.write_all(self.refresh_token.0.as_bytes()).expect("Should be able to write data");
+	}
 
     pub fn set_tokens(&mut self, access_token: Token, refresh_token: Token) {
         self.access_token = access_token;
