@@ -131,6 +131,29 @@ impl Client {
         }
     }
 
+    /// Фукнция для отправки put запроса на api матрикса
+    pub async fn put<T: serde::Serialize>(
+        &self,
+        path: &str,
+        headers: HeaderMap,
+        body: T,
+    ) -> Result<Response, Box<dyn Error>> {
+        let mut url = self.host.0.clone();
+        url.push_str(path);
+
+        match self
+            .client
+            .put(url.trim())
+            .headers(headers)
+            .json(&body)
+            .send()
+            .await
+        {
+            Ok(resp) => Ok(resp),
+            Err(message) => Err(Box::new(message)),
+        }
+    }
+
     /// Взаимодействие с auth частью api матрикса
     pub fn auth(&self) -> api::auth::Auth {
         api::auth::Auth::new(self.clone())
@@ -161,13 +184,11 @@ async fn set_client_with_login(matrix_server: Url) -> Result<Client, Box<dyn Err
 async fn load_client_from_file(matrix_server: &Url) -> Result<Client, Box<dyn Error>> {
     let mut matrix_client: Client = Client::new_from_file(matrix_server.clone())?;
 
-    println!("WhoAmI...");
     if matrix_client.auth().who_am_i().await.is_ok() {
         println!("Matrix client set");
         return Ok(matrix_client);
     }
 
-    println!("RefreshToken...");
     matrix_client = matrix_client.auth().refresh().await?;
 
     match matrix_client.save_tokens() {
@@ -193,7 +214,6 @@ pub async fn set_client(matrix_server: Url) -> Result<Client, Box<dyn Error>> {
             };
             break;
         } else {
-            println!("Login...");
             matrix_client = set_client_with_login(matrix_server).await?;
             break;
         }
