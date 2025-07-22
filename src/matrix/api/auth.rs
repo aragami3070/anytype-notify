@@ -76,13 +76,7 @@ impl Auth {
     /// Добавляет в ```Client``` полученные токены и возвращает ```Client```
     pub async fn login(mut self, user: User, password: Password) -> Result<Client, Box<dyn Error>> {
         let mut headers = HeaderMap::new();
-        headers.insert(
-            "Accept",
-            match "application/json".parse() {
-                Ok(s) => s,
-                Err(message) => return Err(Box::new(message)),
-            },
-        );
+        headers.insert("Accept", "application/json".parse()?);
 
         let identifier_val = Identifier {
             type_: "m.id.user".to_string(),
@@ -97,14 +91,10 @@ impl Auth {
             request_refresh_token: Some(true),
         };
 
-        let response = match self
+        let response = self
             .client
             .post("/_matrix/client/v3/login", headers, body)
-            .await
-        {
-            Ok(resp) => resp,
-            Err(message) => return Err(message),
-        };
+            .await?;
 
         let result = match response.json::<LoginResponse>().await {
             Ok(resp) => resp,
@@ -121,29 +111,17 @@ impl Auth {
     /// данном сеансе. Если токен истек вернет ошибку
     pub async fn who_am_i(&self) -> Result<WhoAmI, Box<dyn Error>> {
         let mut headers = HeaderMap::new();
-        headers.insert(
-            "Accept",
-            match "application/json".parse() {
-                Ok(s) => s,
-                Err(message) => return Err(Box::new(message)),
-            },
-        );
+        headers.insert("Accept", "application/json".parse()?);
+
         headers.insert(
             "Authorization",
-            match format!("Bearer {}", self.client.get_access_token().0).parse() {
-                Ok(s) => s,
-                Err(message) => return Err(Box::new(message)),
-            },
+            format!("Bearer {}", self.client.get_access_token().0).parse()?,
         );
 
-        let response = match self
+        let response = self
             .client
             .get("/_matrix/client/v3/account/whoami", headers)
-            .await
-        {
-            Ok(resp) => resp,
-            Err(message) => return Err(message),
-        };
+            .await?;
 
         let result = match response.json::<WhoAmI>().await {
             Ok(resp) => resp,
@@ -158,15 +136,9 @@ impl Auth {
     /// Добавляет в ```Client``` полученные токены и возвращает ```Client```
     pub async fn refresh(mut self) -> Result<Client, Box<dyn Error>> {
         let mut headers = HeaderMap::new();
-        headers.insert(
-            "Accept",
-            match "application/json".parse() {
-                Ok(s) => s,
-                Err(message) => return Err(Box::new(message)),
-            },
-        );
+        headers.insert("Accept", "application/json".parse()?);
 
-        let response = match self
+        let response = self
             .client
             .post(
                 "/_matrix/client/v3/refresh",
@@ -175,11 +147,7 @@ impl Auth {
                     refresh_token: self.client.get_refresh_token(),
                 },
             )
-            .await
-        {
-            Ok(resp) => resp,
-            Err(message) => return Err(message),
-        };
+            .await?;
 
         let result = match response.json::<NewTokens>().await {
             Ok(resp) => resp,

@@ -38,10 +38,7 @@ impl Client {
 
     /// Функция создания Client с токенами из файла assets/tokens.txt
     pub fn new_from_file(host_val: Url) -> Result<Client, Box<dyn Error>> {
-        let file = match File::open("assets/tokens.txt") {
-            Ok(f) => f,
-            Err(message) => return Err(Box::new(message)),
-        };
+        let file = File::open("assets/tokens.txt")?;
 
         let mut reader = BufReader::new(file).lines();
 
@@ -49,19 +46,13 @@ impl Client {
         let refresh_t;
 
         if let Some(first_line) = reader.next() {
-            access_t = match first_line {
-                Ok(t) => Token(t),
-                Err(message) => return Err(Box::new(message)),
-            }
+            access_t = first_line?;
         } else {
             return Err("File is empty".into());
         }
 
         if let Some(second_line) = reader.next() {
-            refresh_t = match second_line {
-                Ok(t) => Token(t),
-                Err(message) => return Err(Box::new(message)),
-            }
+            refresh_t = second_line?;
         } else {
             return Err("File has only one line".into());
         }
@@ -69,8 +60,8 @@ impl Client {
         Ok(Self {
             host: host_val,
             client: reqwest::Client::builder().build()?,
-            access_token: access_t,
-            refresh_token: refresh_t,
+            access_token: Token(access_t),
+            refresh_token: Token(refresh_t),
         })
     }
 
@@ -85,12 +76,7 @@ impl Client {
     /// Функция сохранения токенов в файл assets/tokens.txt
     pub fn save_tokens(&self) -> Result<&str, Box<dyn Error>> {
         if !Path::new("assets/").exists() {
-            match fs::create_dir("assets/") {
-                Ok(_) => {}
-                Err(message) => {
-                    return Err(Box::new(message));
-                }
-            }
+            fs::create_dir("assets/")?;
         }
 
         let mut token_file =
@@ -155,15 +141,9 @@ async fn set_client_with_login(matrix_server: Url) -> Result<Client, Box<dyn Err
     let password =
         Password(std::env::var("MATRIX_PASSWORD").expect("MATRIX_PASSWORD must be set in .env."));
 
-    let mut matrix_client = match Client::new(matrix_server) {
-        Ok(cl) => cl,
-        Err(message) => return Err(message),
-    };
+    let mut matrix_client = Client::new(matrix_server)?;
 
-    matrix_client = match matrix_client.auth().login(user_name, password).await {
-        Ok(m) => m,
-        Err(message) => return Err(message),
-    };
+    matrix_client = matrix_client.auth().login(user_name, password).await?;
 
     match matrix_client.save_tokens() {
         Ok(_) => println!("Matrix client set"),
@@ -174,10 +154,7 @@ async fn set_client_with_login(matrix_server: Url) -> Result<Client, Box<dyn Err
 }
 
 async fn load_client_from_file(matrix_server: &Url) -> Result<Client, Box<dyn Error>> {
-    let mut matrix_client: Client = match Client::new_from_file(matrix_server.clone()) {
-        Ok(cl) => cl,
-        Err(message) => return Err(message),
-    };
+    let mut matrix_client: Client = Client::new_from_file(matrix_server.clone())?;
 
     println!("WhoAmI...");
     if matrix_client.auth().who_am_i().await.is_ok() {
@@ -186,10 +163,7 @@ async fn load_client_from_file(matrix_server: &Url) -> Result<Client, Box<dyn Er
     }
 
     println!("RefreshToken...");
-    matrix_client = match matrix_client.auth().refresh().await {
-        Ok(cl) => cl,
-        Err(message) => return Err(message),
-    };
+    matrix_client = matrix_client.auth().refresh().await?;
 
     match matrix_client.save_tokens() {
         Ok(_) => println!("Matrix client set"),
@@ -213,10 +187,7 @@ pub async fn set_client(matrix_server: Url) -> Result<Client, Box<dyn Error>> {
             break;
         } else {
             println!("Login...");
-            matrix_client = match set_client_with_login(matrix_server).await {
-                Ok(cl) => cl,
-                Err(message) => return Err(message),
-            };
+            matrix_client = set_client_with_login(matrix_server).await?;
             break;
         }
     }
