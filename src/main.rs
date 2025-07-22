@@ -37,7 +37,7 @@ async fn main() {
     let objects = match get_anytype_objects(&anytype_url, &anytype_token, &required_types).await {
         Ok(data) => data,
         Err(message) => {
-            println!("Error: {message}");
+            eprintln!("Error: {message}");
             return;
         }
     };

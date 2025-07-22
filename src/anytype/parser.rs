@@ -13,21 +13,11 @@ async fn fetch(url: &Url, token: &Token) -> Result<ApiResponse, Box<dyn Error>> 
 
     let mut headers = HeaderMap::new();
     headers.insert("Accept", "application/json".parse()?);
-    headers.insert("Authorization", format!("Bearer {0}", token.0).parse()?);
+    headers.insert("Authorization", format!("Bearer {}", token.0).parse()?);
 
-    let response = match client.get(url.0.clone()).headers(headers).send().await {
-        Ok(r) => r,
-        Err(message) => {
-            return Err(Box::new(message));
-        }
-    };
+    let response = client.get(url.0.clone()).headers(headers).send().await?;
 
-    let body = match response.json::<ApiResponse>().await {
-        Ok(b) => b,
-        Err(message) => {
-            return Err(Box::new(message));
-        }
-    };
+    let body = response.json::<ApiResponse>().await?;
 
     Ok(body)
 }
@@ -63,25 +53,10 @@ pub async fn get_anytype_objects(
     token: &Token,
     required_types: &RequiredTypes,
 ) -> Result<ApiResponse, Box<dyn Error>> {
-    let objects = match fetch(url, token).await {
-        Ok(data) => {
-            println!("Response parsed successfully");
-            data
-        }
-        Err(message) => {
-            return Err(message);
-        }
-    };
+    let objects = fetch(url, token).await?;
 
-    let filtred_objects = match filter_objects_by_types(objects, required_types).await {
-        Ok(objects) => {
-            println!("Found {} objects", objects.len());
-            objects
-        }
-        Err(message) => {
-            return Err(message.into());
-        }
-    };
+    let filtred_objects = filter_objects_by_types(objects, required_types).await?;
+    println!("Finded {} objects", filtred_objects.len());
 
     Ok(api_response::ApiResponse {
         data: filtred_objects,
