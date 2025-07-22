@@ -158,6 +158,11 @@ impl Client {
     pub fn auth(&self) -> api::auth::Auth {
         api::auth::Auth::new(self.clone())
     }
+
+    /// Взаимодействие с room частью api матрикса
+    pub fn room(&self) -> api::room::Room {
+        api::room::Room::new(self.clone())
+    }
 }
 
 /// Функция, которая создаст ```Client``` матрикса с access и refresh токенами. Делает login и
