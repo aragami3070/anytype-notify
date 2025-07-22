@@ -1,11 +1,13 @@
 use serde::Deserialize;
 
-#[derive(Deserialize)]
+#[allow(dead_code)]
+#[derive(Debug, Deserialize)]
 pub struct ApiResponse {
     pub data: Vec<AnytypeObject>,
 }
 
-#[derive(Deserialize)]
+#[allow(dead_code)]
+#[derive(Debug, Deserialize)]
 pub struct AnytypeObject {
     pub archived: bool,
     pub icon: Option<Icon>,
@@ -20,13 +22,15 @@ pub struct AnytypeObject {
     pub type_field: Option<ObjectType>,
 }
 
-#[derive(Deserialize)]
+#[allow(dead_code)]
+#[derive(Debug, Deserialize)]
 pub struct Icon {
     pub emoji: Option<String>,
     pub format: String,
 }
 
-#[derive(Deserialize)]
+#[allow(dead_code)]
+#[derive(Debug, Deserialize)]
 pub struct ObjectType {
     pub archived: Option<bool>,
     pub icon: Option<Icon>,
@@ -39,7 +43,8 @@ pub struct ObjectType {
     pub properties: Option<Vec<Property>>,
 }
 
-#[derive(Deserialize)]
+#[allow(dead_code)]
+#[derive(Debug, Deserialize)]
 pub struct Property {
     pub format: String,
     pub id: String,
@@ -48,6 +53,7 @@ pub struct Property {
     pub object: Option<String>,
     pub select: Option<SelectTag>,
 
+#[allow(dead_code)]
     pub text: Option<String>,
     pub number: Option<f64>,
     pub checkbox: Option<bool>,
@@ -60,7 +66,8 @@ pub struct Property {
     pub multi_select: Option<Vec<SelectTag>>,
 }
 
-#[derive(Deserialize)]
+#[allow(dead_code)]
+#[derive(Debug, Deserialize)]
 pub struct SelectTag {
     pub color: String,
     pub id: String,
