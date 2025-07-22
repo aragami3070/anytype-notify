@@ -1,4 +1,7 @@
-use serde::Serialize;
+use std::error::Error;
+
+use reqwest::header::HeaderMap;
+use serde::{Deserialize, Serialize};
 
 use crate::matrix::{api::auth::DeviceId, client::{Client, RoomId}};
 
@@ -7,6 +10,13 @@ use crate::matrix::{api::auth::DeviceId, client::{Client, RoomId}};
 pub struct MessageBody {
     pub body: String,
     pub msgtype: String,
+}
+
+#[allow(dead_code)]
+#[derive(Deserialize)]
+pub struct EventId {
+    #[serde(rename = "event_id")]
+	pub value: String,
 }
 
 pub struct Room {
