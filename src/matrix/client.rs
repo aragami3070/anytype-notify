@@ -17,6 +17,7 @@ pub struct User(pub String);
 #[derive(Clone)]
 pub struct Password(pub String);
 
+/// Клиент для взаимодействия с api матрикса
 #[derive(Clone)]
 pub struct Client {
     host: Url,
@@ -136,6 +137,8 @@ impl Client {
     }
 }
 
+/// Функция, которая создаст ```Client``` матрикса с access и refresh токенами. Делает login и
+/// сохраняет полученные токены
 async fn set_client_with_login(matrix_server: Url) -> Result<Client, Box<dyn Error>> {
     let user_name = User(std::env::var("MATRIX_USER").expect("MATRIX_USER must be set in .env."));
     let password =
@@ -153,6 +156,8 @@ async fn set_client_with_login(matrix_server: Url) -> Result<Client, Box<dyn Err
     Ok(matrix_client)
 }
 
+/// Функция, которая создаст ```Client``` матрикса с access и refresh токенами. Берет токены из
+/// файла и проверяет их валидность
 async fn load_client_from_file(matrix_server: &Url) -> Result<Client, Box<dyn Error>> {
     let mut matrix_client: Client = Client::new_from_file(matrix_server.clone())?;
 
@@ -172,6 +177,8 @@ async fn load_client_from_file(matrix_server: &Url) -> Result<Client, Box<dyn Er
     Ok(matrix_client)
 }
 
+/// Функция, которая создаст ```Client``` матрикса с access и refresh токенами. Либо берет токены
+/// из файла "assets/tokens.txt", либо делает login
 pub async fn set_client(matrix_server: Url) -> Result<Client, Box<dyn Error>> {
     let matrix_client: Client;
     loop {
