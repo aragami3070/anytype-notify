@@ -15,6 +15,9 @@ use crate::{Token, Url, matrix::api};
 pub struct User(pub String);
 
 #[derive(Clone)]
+pub struct RoomId(pub String);
+
+#[derive(Clone)]
 pub struct Password(pub String);
 
 /// Клиент для взаимодействия с api матрикса
