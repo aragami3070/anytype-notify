@@ -1,18 +1,20 @@
-use crate::anytype::entities::api_response::{AnytypeObject, ApiResponse};
-use crate::anytype::entities::api_response;
+use crate::{
+    RequiredTypes, Token, Url,
+    anytype::entities::api_response::{self, AnytypeObject, ApiResponse},
+};
 
 use reqwest::Client;
 use reqwest::header::HeaderMap;
 use std::error::Error;
 
-async fn fetch(url: &String, token: &String) -> Result<ApiResponse, Box<dyn Error>> {
+async fn fetch(url: &Url, token: &Token) -> Result<ApiResponse, Box<dyn Error>> {
     let client = Client::builder().build()?;
 
     let mut headers = HeaderMap::new();
     headers.insert("Accept", "application/json".parse()?);
-    headers.insert("Authorization", format!("Bearer {token}").parse()?);
+    headers.insert("Authorization", format!("Bearer {0}", token.0).parse()?);
 
-    let response = match client.get(url).headers(headers).send().await {
+    let response = match client.get(url.0.clone()).headers(headers).send().await {
         Ok(r) => r,
         Err(message) => {
             return Err(Box::new(message));
@@ -31,7 +33,7 @@ async fn fetch(url: &String, token: &String) -> Result<ApiResponse, Box<dyn Erro
 
 async fn filter_objects_by_types(
     objects: ApiResponse,
-    required_types: &Vec<String>,
+    required_types: &RequiredTypes,
 ) -> Result<Vec<AnytypeObject>, String> {
     let filtered_objects: Vec<AnytypeObject> = objects
         .data
@@ -39,7 +41,7 @@ async fn filter_objects_by_types(
         .filter(|o| {
             o.type_field
                 .as_ref()
-                .map(|t| required_types.iter().any(|ty| ty == &t.key))
+                .map(|t| required_types.types.iter().any(|ty| ty == &t.key))
                 .unwrap_or(false)
         })
         .collect();
@@ -54,9 +56,9 @@ async fn filter_objects_by_types(
 }
 
 pub async fn get_anytype_objects(
-    url: &String,
-    token: &String,
-    required_types: &Vec<String>,
+    url: &Url,
+    token: &Token,
+    required_types: &RequiredTypes,
 ) -> Result<ApiResponse, Box<dyn Error>> {
     let objects = match fetch(url, token).await {
         Ok(data) => {
