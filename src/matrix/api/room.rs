@@ -2,9 +2,12 @@ use std::error::Error;
 
 use reqwest::header::HeaderMap;
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
-use crate::matrix::{api::auth::DeviceId, client::{Client, RoomId}};
-
+use crate::matrix::{
+    api::auth::DeviceId,
+    client::{Client, RoomId},
+};
 
 #[derive(Serialize)]
 pub struct MessageBody {
@@ -16,7 +19,7 @@ pub struct MessageBody {
 #[derive(Deserialize)]
 pub struct EventId {
     #[serde(rename = "event_id")]
-	pub value: String,
+    pub value: String,
 }
 
 pub struct Room {
@@ -34,9 +37,13 @@ impl Room {
         device_id: &DeviceId,
         text: String,
     ) -> Result<EventId, Box<dyn Error>> {
+        let mut new_uuid = Uuid::new_v4().to_string();
+
+        new_uuid.push_str(device_id.0.trim());
+
         let path = format!(
             "/_matrix/client/v3/rooms/{}/send/m.room.message/{}",
-            room_id.0, device_id.0
+            room_id.0, new_uuid
         );
 
         let mut headers = HeaderMap::new();
@@ -52,12 +59,9 @@ impl Room {
             msgtype: "m.text".to_owned(),
         };
 
-        let response = self
-            .client
-            .put(path.trim(), headers, body)
-            .await?;
+        let response = self.client.put(path.trim(), headers, body).await?;
 
-		let result = response.json::<EventId>().await?;
+        let result = response.json::<EventId>().await?;
 
         Ok(result)
     }
