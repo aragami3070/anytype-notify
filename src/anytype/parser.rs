@@ -7,6 +7,7 @@ use reqwest::Client;
 use reqwest::header::HeaderMap;
 use std::error::Error;
 
+/// Get all Anytype objects from space 
 async fn fetch(url: &Url, token: &Token) -> Result<ApiResponse, Box<dyn Error>> {
     let client = Client::builder().build()?;
 
@@ -31,6 +32,7 @@ async fn fetch(url: &Url, token: &Token) -> Result<ApiResponse, Box<dyn Error>> 
     Ok(body)
 }
 
+/// Find objects with only required types from Anytype response
 async fn filter_objects_by_types(
     objects: ApiResponse,
     required_types: &RequiredTypes,
@@ -55,6 +57,7 @@ async fn filter_objects_by_types(
     Ok(filtered_objects)
 }
 
+/// Get Anytype objects with required types from space
 pub async fn get_anytype_objects(
     url: &Url,
     token: &Token,

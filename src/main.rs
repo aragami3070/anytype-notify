@@ -23,9 +23,9 @@ async fn main() {
     let anytype_token =
         Token(std::env::var("ANYTYPE_TOKEN").expect("ANYTYPE_TOKEN must be set in .env."));
     let raw_required_types =
-        std::env::var("REQUIRED_TYPES").expect("REQUIRED_TYPES must be set in .env.");
+        std::env::var("REQUIRED_TYPES").expect("REQUIRED_TYPES must be set in .env."); // String
 
-    // Parse required types
+    // Parse required types from String to struct
     let required_types = RequiredTypes {
         types: raw_required_types
             .split(',')
