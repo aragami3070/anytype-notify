@@ -96,10 +96,7 @@ impl Auth {
             .post("/_matrix/client/v3/login", headers, body)
             .await?;
 
-        let result = match response.json::<LoginResponse>().await {
-            Ok(resp) => resp,
-            Err(message) => return Err(Box::new(message)),
-        };
+        let result = response.json::<LoginResponse>().await?;
 
         self.client
             .set_tokens(result.access_token.clone(), result.refresh_token.clone());
@@ -123,10 +120,7 @@ impl Auth {
             .get("/_matrix/client/v3/account/whoami", headers)
             .await?;
 
-        let result = match response.json::<WhoAmI>().await {
-            Ok(resp) => resp,
-            Err(message) => return Err(Box::new(message)),
-        };
+        let result = response.json::<WhoAmI>().await?;
 
         Ok(result)
     }
@@ -149,10 +143,7 @@ impl Auth {
             )
             .await?;
 
-        let result = match response.json::<NewTokens>().await {
-            Ok(resp) => resp,
-            Err(message) => return Err(Box::new(message)),
-        };
+        let result = response.json::<NewTokens>().await?;
 
         self.client
             .set_tokens(result.access_token.clone(), result.refresh_token.clone());
