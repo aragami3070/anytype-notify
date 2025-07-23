@@ -1,7 +1,9 @@
 mod anytype;
+mod config;
 mod matrix;
 
 use crate::anytype::parser::get_anytype_objects;
+use crate::config::AppConfig;
 use crate::matrix::client::set_client;
 
 use dotenv::dotenv;
@@ -14,7 +16,7 @@ pub struct Url(pub String);
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Token(pub String);
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct RequiredTypes {
     pub types: Vec<String>,
 }
@@ -26,19 +28,16 @@ async fn main() {
     let anytype_url = Url(std::env::var("ANYTYPE_URL").expect("ANYTYPE_URL must be set in .env."));
     let anytype_token =
         Token(std::env::var("ANYTYPE_TOKEN").expect("ANYTYPE_TOKEN must be set in .env."));
-    let raw_required_types =
-        std::env::var("REQUIRED_TYPES").expect("REQUIRED_TYPES must be set in .env."); // String
 
-    // Parse required types from String to struct
-    let required_types = RequiredTypes {
-        types: raw_required_types
-            .split(',')
-            .map(|s| s.trim().to_string())
-            .filter(|s| !s.is_empty())
-            .collect(),
+    let config = match AppConfig::from_file("config.toml") {
+        Ok(config) => config,
+        Err(message) => {
+            eprintln!("Error: {message}");
+            return;
+        }
     };
 
-    let objects = match get_anytype_objects(&anytype_url, &anytype_token, &required_types).await {
+    let objects = match get_anytype_objects(&anytype_url, &anytype_token, &config.required_types).await {
         Ok(data) => data,
         Err(message) => {
             eprintln!("Error: {message}");
