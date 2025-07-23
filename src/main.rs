@@ -9,7 +9,7 @@ use anytype::parser::get_anytype_objects;
 
 use dotenv::dotenv;
 
-use crate::matrix::client::{set_client};
+use crate::matrix::client::{RoomId, set_client};
 
 #[derive(Clone)]
 pub struct Url(pub String);
@@ -59,10 +59,11 @@ async fn main() {
             .find(|p| p.key == "created_date")
             .and_then(|p| p.date.as_deref())
             .unwrap_or("<no creation date>");
-      
+
         println!("name: {name}");
         println!("snippet: {snippet}");
         println!("creation date: {date}");
+        println!("");
     }
 
     let matrix_server =
@@ -76,11 +77,34 @@ async fn main() {
         }
     };
 
-	println!("Who am I: {:?}", match matrix_client.auth().who_am_i().await {
-        Ok(cl) => cl,
+    let device_id = match matrix_client.auth().who_am_i().await {
+        Ok(me) => me,
         Err(message) => {
             eprintln!("Error: {message}");
             process::exit(1);
         }
-	});
+    }
+    .device_id;
+
+    let room_id =
+        RoomId(std::env::var("MATRIX_ROOM_ID").expect("MATRIX_ROOM_ID must be set in .env."));
+
+    let message = "Aboba";
+
+    println!("");
+    println!(
+        "Message_id: {}",
+        match matrix_client
+            .room()
+            .send_message(&room_id, &device_id, message.to_string())
+            .await
+        {
+            Ok(cl) => cl,
+            Err(message) => {
+                eprintln!("Error: {message}");
+                process::exit(1);
+            }
+        }
+        .value
+    );
 }
