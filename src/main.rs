@@ -1,15 +1,13 @@
 mod anytype;
+mod config;
 mod matrix;
 
-use std::process;
-
-use serde::{Deserialize, Serialize};
-
-use anytype::parser::get_anytype_objects;
+use crate::anytype::sentinel;
+use crate::matrix::client::{RoomId, set_client};
 
 use dotenv::dotenv;
-
-use crate::matrix::client::{RoomId, set_client};
+use serde::{Deserialize, Serialize};
+use std::process;
 
 #[derive(Clone)]
 pub struct Url(pub String);
@@ -17,7 +15,7 @@ pub struct Url(pub String);
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Token(pub String);
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct RequiredTypes {
     pub types: Vec<String>,
 }
@@ -27,29 +25,18 @@ async fn main() {
     dotenv().ok();
 
     let anytype_url = Url(std::env::var("ANYTYPE_URL").expect("ANYTYPE_URL must be set in .env."));
-    let anytype_token =
-        Token(std::env::var("ANYTYPE_TOKEN").expect("ANYTYPE_TOKEN must be set in .env."));
-    let raw_required_types =
-        std::env::var("REQUIRED_TYPES").expect("REQUIRED_TYPES must be set in .env."); // String
 
-    // Parse required types from String to struct
-    let required_types = RequiredTypes {
-        types: raw_required_types
-            .split(',')
-            .map(|s| s.trim().to_string())
-            .filter(|s| !s.is_empty())
-            .collect(),
-    };
-
-    let objects = match get_anytype_objects(&anytype_url, &anytype_token, &required_types).await {
+    let new_objects = match sentinel::find_new_objects(&anytype_url).await {
         Ok(data) => data,
         Err(message) => {
             eprintln!("Error: {message}");
-            return;
+            process::exit(1);
         }
     };
 
-    for o in objects.data {
+    println!("Found {} new objects", new_objects.data.len());
+
+    for o in &new_objects.data {
         let name = &o.name;
         let snippet = o.snippet.as_deref().unwrap_or("<no snippet>");
 

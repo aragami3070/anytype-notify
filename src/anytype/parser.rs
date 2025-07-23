@@ -56,7 +56,6 @@ pub async fn get_anytype_objects(
     let objects = fetch(url, token).await?;
 
     let filtred_objects = filter_objects_by_types(objects, required_types).await?;
-    println!("Finded {} objects", filtred_objects.len());
 
     Ok(api_response::ApiResponse {
         data: filtred_objects,
