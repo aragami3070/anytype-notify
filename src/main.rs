@@ -1,15 +1,12 @@
 mod anytype;
 mod matrix;
 
-use std::process;
-
-use serde::{Deserialize, Serialize};
-
-use anytype::parser::get_anytype_objects;
+use crate::anytype::parser::get_anytype_objects;
+use crate::matrix::client::set_client;
 
 use dotenv::dotenv;
-
-use crate::matrix::client::{set_client};
+use serde::{Deserialize, Serialize};
+use std::process;
 
 #[derive(Clone)]
 pub struct Url(pub String);
@@ -59,7 +56,7 @@ async fn main() {
             .find(|p| p.key == "created_date")
             .and_then(|p| p.date.as_deref())
             .unwrap_or("<no creation date>");
-      
+
         println!("name: {name}");
         println!("snippet: {snippet}");
         println!("creation date: {date}");
@@ -76,11 +73,14 @@ async fn main() {
         }
     };
 
-	println!("Who am I: {:?}", match matrix_client.auth().who_am_i().await {
-        Ok(cl) => cl,
-        Err(message) => {
-            eprintln!("Error: {message}");
-            process::exit(1);
+    println!(
+        "Who am I: {:?}",
+        match matrix_client.auth().who_am_i().await {
+            Ok(cl) => cl,
+            Err(message) => {
+                eprintln!("Error: {message}");
+                process::exit(1);
+            }
         }
-	});
+    );
 }
