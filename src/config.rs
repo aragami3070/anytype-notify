@@ -1,13 +1,13 @@
 use crate::RequiredTypes;
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use config::Config;
 use std::error::Error;
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct AppConfig {
     pub required_types: RequiredTypes,
-    pub interval_minutes: u64,
+    pub interval_minutes: i64,
 }
 
 impl AppConfig {
