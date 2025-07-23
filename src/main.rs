@@ -2,8 +2,7 @@ mod anytype;
 mod config;
 mod matrix;
 
-use crate::anytype::parser::get_anytype_objects;
-use crate::config::AppConfig;
+use crate::anytype::sentinel;
 use crate::matrix::client::set_client;
 
 use dotenv::dotenv;
@@ -26,26 +25,18 @@ async fn main() {
     dotenv().ok();
 
     let anytype_url = Url(std::env::var("ANYTYPE_URL").expect("ANYTYPE_URL must be set in .env."));
-    let anytype_token =
-        Token(std::env::var("ANYTYPE_TOKEN").expect("ANYTYPE_TOKEN must be set in .env."));
 
-    let config = match AppConfig::from_file("config.toml") {
-        Ok(config) => config,
-        Err(message) => {
-            eprintln!("Error: {message}");
-            return;
-        }
-    };
-
-    let objects = match get_anytype_objects(&anytype_url, &anytype_token, &config.required_types).await {
+    let new_objects = match sentinel::find_new_objects(&anytype_url).await {
         Ok(data) => data,
         Err(message) => {
             eprintln!("Error: {message}");
-            return;
+            process::exit(1);
         }
     };
 
-    for o in objects.data {
+    println!("Found {} new objects", new_objects.data.len());
+
+    for o in &new_objects.data {
         let name = &o.name;
         let snippet = o.snippet.as_deref().unwrap_or("<no snippet>");
 
