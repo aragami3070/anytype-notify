@@ -3,7 +3,7 @@ mod config;
 mod matrix;
 
 use crate::anytype::sentinel;
-use crate::matrix::client::set_client;
+use crate::matrix::client::{RoomId, set_client};
 
 use dotenv::dotenv;
 use serde::{Deserialize, Serialize};
@@ -50,6 +50,7 @@ async fn main() {
         println!("name: {name}");
         println!("snippet: {snippet}");
         println!("creation date: {date}");
+        println!("");
     }
 
     let matrix_server =
@@ -63,14 +64,34 @@ async fn main() {
         }
     };
 
+    let device_id = match matrix_client.auth().who_am_i().await {
+        Ok(me) => me,
+        Err(message) => {
+            eprintln!("Error: {message}");
+            process::exit(1);
+        }
+    }
+    .device_id;
+
+    let room_id =
+        RoomId(std::env::var("MATRIX_ROOM_ID").expect("MATRIX_ROOM_ID must be set in .env."));
+
+    let message = "Aboba";
+
+    println!("");
     println!(
-        "Who am I: {:?}",
-        match matrix_client.auth().who_am_i().await {
+        "Message_id: {}",
+        match matrix_client
+            .room()
+            .send_message(&room_id, &device_id, message.to_string())
+            .await
+        {
             Ok(cl) => cl,
             Err(message) => {
                 eprintln!("Error: {message}");
                 process::exit(1);
             }
         }
+        .value
     );
 }
