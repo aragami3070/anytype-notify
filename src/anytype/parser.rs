@@ -1,13 +1,13 @@
 use crate::{
     RequiredTypes, Token, Url,
-    anytype::entities::api_response::{self, AnytypeObject, ApiResponse},
+    anytype::entities::api_response::{AnytypeObject, ApiResponse},
 };
 
 use reqwest::Client;
 use reqwest::header::HeaderMap;
 use std::error::Error;
 
-/// Get all Anytype objects from space 
+/// Get all Anytype objects from space
 async fn fetch(url: &Url, token: &Token) -> Result<ApiResponse, Box<dyn Error>> {
     let client = Client::builder().build()?;
 
@@ -26,7 +26,7 @@ async fn fetch(url: &Url, token: &Token) -> Result<ApiResponse, Box<dyn Error>> 
 async fn filter_objects_by_types(
     objects: ApiResponse,
     required_types: &RequiredTypes,
-) -> Result<Vec<AnytypeObject>, String> {
+) -> ApiResponse {
     let filtered_objects: Vec<AnytypeObject> = objects
         .data
         .into_iter()
@@ -38,13 +38,7 @@ async fn filter_objects_by_types(
         })
         .collect();
 
-    if filtered_objects.is_empty() {
-        return Err(format!(
-            "No objects found with required types: {required_types:?}"
-        ));
-    }
-
-    Ok(filtered_objects)
+    ApiResponse{ data: filtered_objects }
 }
 
 /// Get Anytype objects with required types from space
@@ -55,9 +49,7 @@ pub async fn get_anytype_objects(
 ) -> Result<ApiResponse, Box<dyn Error>> {
     let objects = fetch(url, token).await?;
 
-    let filtred_objects = filter_objects_by_types(objects, required_types).await?;
+    let filtred_objects = filter_objects_by_types(objects, required_types);
 
-    Ok(api_response::ApiResponse {
-        data: filtred_objects,
-    })
+    Ok(filtred_objects.await)
 }
