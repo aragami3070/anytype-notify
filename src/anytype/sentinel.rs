@@ -6,7 +6,19 @@ use crate::{
 };
 
 use chrono::{Duration, Utc};
-use std::error::Error;
+use std::{error::Error, fs::File, fs};
+
+async fn save_to_cache(path: &str, objects: ApiResponse) -> std::io::Result<()> {
+    let file = File::create(path)?;
+    serde_json::to_writer_pretty(file, &objects)?;
+    Ok(())
+}
+
+async fn load_from_cache(path: &str) -> std::io::Result<ApiResponse> {
+    let data = fs::read_to_string(path)?;
+    let objects: ApiResponse = serde_json::from_str(&data)?;
+    Ok(objects)
+}
 
 /// Find Anytype objects with creation date after last check
 pub async fn find_new_objects(anytype_url: &Url) -> Result<ApiResponse, Box<dyn Error>> {
