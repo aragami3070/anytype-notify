@@ -3,5 +3,4 @@
 .env.example
 target
 assets
-.env.example
 *.md
