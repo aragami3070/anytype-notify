@@ -1,14 +1,13 @@
-use chrono::{DateTime, Utc};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 #[allow(dead_code)]
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct ApiResponse {
     pub data: Vec<AnytypeObject>,
 }
 
 #[allow(dead_code)]
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct AnytypeObject {
     pub archived: bool,
     pub icon: Option<Icon>,
@@ -23,26 +22,15 @@ pub struct AnytypeObject {
     pub type_field: Option<ObjectType>,
 }
 
-impl AnytypeObject {
-    pub fn created_at(&self) -> Option<DateTime<Utc>> {
-        self.properties
-            .iter()
-            .find(|p| p.key == "created_date")
-            .and_then(|p| p.date.as_ref())
-            .and_then(|s| DateTime::parse_from_rfc3339(s).ok())
-            .map(|dt| dt.with_timezone(&Utc))
-    }
-}
-
 #[allow(dead_code)]
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Icon {
     pub emoji: Option<String>,
     pub format: String,
 }
 
 #[allow(dead_code)]
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct ObjectType {
     pub archived: Option<bool>,
     pub icon: Option<Icon>,
@@ -56,7 +44,7 @@ pub struct ObjectType {
 }
 
 #[allow(dead_code)]
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Property {
     pub format: String,
     pub id: String,
@@ -79,7 +67,7 @@ pub struct Property {
 }
 
 #[allow(dead_code)]
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct SelectTag {
     pub color: String,
     pub id: String,
