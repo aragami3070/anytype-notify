@@ -1,0 +1,16 @@
+services:
+  anytype-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: anytype-notifier
+    restart: unless-stopped
+    volumes:
+      - ./assets:/assets
+    environment:
+      - ANYTYPE_URL=${ANYTYPE_URL}
+      - ANYTYPE_TOKEN=${ANYTYPE_TOKEN}
+      - MATRIX_SERVER=${MATRIX_SERVER}
+      - MATRIX_USER=${MATRIX_USER}
+      - MATRIX_PASSWORD=${MATRIX_PASSWORD}
+      - MATRIX_ROOM_ID=${MATRIX_ROOM_ID}

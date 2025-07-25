@@ -34,25 +34,6 @@ async fn main() {
         }
     };
 
-    println!("Found {} new objects", new_objects.data.len());
-
-    for o in &new_objects.data {
-        let name = &o.name;
-        let snippet = o.snippet.as_deref().unwrap_or("<no snippet>");
-
-        let date = o
-            .properties
-            .iter()
-            .find(|p| p.key == "created_date")
-            .and_then(|p| p.date.as_deref())
-            .unwrap_or("<no creation date>");
-
-        println!("name: {name}");
-        println!("snippet: {snippet}");
-        println!("creation date: {date}");
-        println!("");
-    }
-
     let matrix_server =
         Url(std::env::var("MATRIX_SERVER").expect("MATRIX_SERVER must be set in .env."));
 
@@ -76,11 +57,21 @@ async fn main() {
     let room_id =
         RoomId(std::env::var("MATRIX_ROOM_ID").expect("MATRIX_ROOM_ID must be set in .env."));
 
-    let message = "Aboba";
+    println!("Found {} new objects", new_objects.data.len());
 
-    println!("");
-    println!(
-        "Message_id: {}",
+    for o in &new_objects.data {
+        let name = &o.name;
+        let snippet = o.snippet.as_deref().unwrap_or("<no snippet>");
+
+        let date = o
+            .properties
+            .iter()
+            .find(|p| p.key == "created_date")
+            .and_then(|p| p.date.as_deref())
+            .unwrap_or("<no creation date>");
+
+        let message = format!("Название таски: {}\nДетали: {}\nДата создания: {}", name, snippet, date);
+
         match matrix_client
             .room()
             .send_message(&room_id, &device_id, message.to_string())
@@ -91,7 +82,10 @@ async fn main() {
                 eprintln!("Error: {message}");
                 process::exit(1);
             }
-        }
-        .value
-    );
+        };
+        println!("name: {name}");
+        println!("snippet: {snippet}");
+        println!("creation date: {date}");
+        println!("");
+    }
 }
