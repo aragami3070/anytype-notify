@@ -1,4 +1,4 @@
-interval_minutes = 10
+interval_minutes = 5
 
 [required_types]
 types = ["task"]
