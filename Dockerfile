@@ -1,11 +1,28 @@
-FROM rust:latest
+FROM rust:1.88.0-alpine3.22 as builder
 
+RUN apk add --no-cache musl-dev perl make pkgconfig openssl-libs-static openssl-dev
+RUN apk add --no-cache --upgrade bash
 WORKDIR /app
 
-COPY . .
+COPY Cargo.toml .
+COPY Cargo.lock .
+RUN mkdir src && echo "fn main() {}" > src/main.rs
+RUN cargo build --release --locked --target x86_64-unknown-linux-musl
 
+COPY . .
+RUN touch src/main.rs
+RUN cargo build --locked --release --target x86_64-unknown-linux-musl
+
+FROM alpine:latest
+
+WORKDIR /app
 RUN mkdir -p /app/assets
 
-RUN cargo build --release
+COPY --from=builder /app/target/x86_64-unknown-linux-musl/release/anytype-notify /app/anytype-notify
 
-CMD ["./scripts/start.sh"]
+COPY scripts/start.sh /app/start.sh
+COPY config.toml /app/config.toml
+
+RUN chmod +x /app/anytype-notify /app/start.sh
+
+CMD ["sh", "start.sh"]
