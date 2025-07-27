@@ -7,6 +7,7 @@ use std::error::Error;
 #[derive(Debug, Clone, Deserialize)]
 pub struct AppConfig {
     pub required_types: RequiredTypes,
+	#[allow(dead_code)]
     pub interval_minutes: i64,
 }
 

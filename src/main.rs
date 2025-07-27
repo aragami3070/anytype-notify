@@ -70,7 +70,7 @@ async fn main() {
             .and_then(|p| p.date.as_deref())
             .unwrap_or("<no creation date>");
 
-        let message = format!("Название таски: {}\nДетали: {}\nДата создания: {}", name, snippet, date);
+        let message = format!("Название таски: {name}\nДетали: {snippet}\nДата создания: {date}");
 
         match matrix_client
             .room()
@@ -86,6 +86,6 @@ async fn main() {
         println!("name: {name}");
         println!("snippet: {snippet}");
         println!("creation date: {date}");
-        println!("");
+        println!();
     }
 }
