@@ -1,17 +1,17 @@
 use crate::{
     Token, Url,
     anytype::entities::api_response::{AnytypeObject, ApiResponse},
+    anytype::entities::cache::{AnytypeCache, CachedObject},
     anytype::parser::get_anytype_objects,
-    config::AppConfig,
 };
 
 use std::{
-    collections::HashSet,
     error::Error,
-    fs::{self, File}, path::Path,
+    fs::{self, File},
+    path::Path,
 };
 
-async fn save_to_cache(path: &str, objects: &ApiResponse) -> std::io::Result<()> {
+async fn save_to_cache(path: &str, objects: &AnytypeCache) -> std::io::Result<()> {
     let cache_path = Path::new(path);
 
     if let Some(parent) = cache_path.parent() {
@@ -23,22 +23,10 @@ async fn save_to_cache(path: &str, objects: &ApiResponse) -> std::io::Result<()>
     Ok(())
 }
 
-async fn load_from_cache(path: &str) -> std::io::Result<ApiResponse> {
+async fn load_from_cache(path: &str) -> Result<AnytypeCache, Box<dyn Error>> {
     let data = fs::read_to_string(path)?;
-    let objects: ApiResponse = serde_json::from_str(&data)?;
-    Ok(objects)
-}
-
-async fn compare_with_cache(cached: &ApiResponse, current: &ApiResponse) -> ApiResponse {
-    let cached_ids: HashSet<&str> = cached.data.iter().map(|o| o.id.as_str()).collect();
-    let new_objects: Vec<AnytypeObject> = current
-        .data
-        .iter()
-        .filter(|o| !cached_ids.contains(o.id.as_str()))
-        .cloned()
-        .collect();
-
-    ApiResponse { data: new_objects }
+    let cache: AnytypeCache = serde_json::from_str(&data)?;
+    Ok(cache)
 }
 
 /// Find Anytype objects with creation date after last check
@@ -46,22 +34,80 @@ pub async fn find_new_objects(anytype_url: &Url) -> Result<ApiResponse, Box<dyn 
     let anytype_token =
         Token(std::env::var("ANYTYPE_TOKEN").expect("ANYTYPE_TOKEN must be set in .env."));
 
-    let config = AppConfig::from_file("config.toml")?;
     let cache_path = "assets/cache.json";
 
-    let current_objects =
-        get_anytype_objects(anytype_url, &anytype_token, &config.required_types).await?;
+    let current_objects = get_anytype_objects(anytype_url, &anytype_token).await?;
 
     if !Path::new(cache_path).exists() {
         println!("Cache not found. Saving current objects and exiting.");
-        save_to_cache(cache_path, &current_objects).await?;
-        return Ok(ApiResponse { data: vec![] })
+        let mut initial_cache = AnytypeCache::default();
+
+        for o in &current_objects.data {
+            let id = &o.id;
+            let notify_flag = o.is_notify_enabled();
+            initial_cache.objects.insert(
+                id.clone(),
+                CachedObject {
+                    notify: notify_flag,
+                    notified: notify_flag,
+                },
+            );
+        }
+
+        if let Err(e) = save_to_cache(cache_path, &initial_cache).await {
+            eprintln!("Failed to save initial cache: {e}");
+        }
+
+        return Ok(ApiResponse { data: vec![] });
     }
-    let cached_objects = load_from_cache(cache_path).await?;
 
-    let new_objects = compare_with_cache(&cached_objects, &current_objects).await;
+    let mut cached_objects = load_from_cache(cache_path).await?;
 
-    save_to_cache(cache_path, &current_objects).await?;
+    let mut objects_to_notify: Vec<AnytypeObject> = Vec::new();
 
-    Ok(new_objects)
+    for o in &current_objects.data {
+        let id = &o.id;
+        let notify_flag = o.is_notify_enabled();
+
+        match cached_objects.objects.get_mut(id) {
+            Some(obj) => {
+                if notify_flag && !obj.notified {
+                    objects_to_notify.push(o.clone());
+                    obj.notify = true;
+                    obj.notified = true;
+                } else if !notify_flag {
+                    obj.notify = false;
+                    obj.notified = false;
+                }
+            }
+            None => {
+                if notify_flag {
+                    objects_to_notify.push(o.clone());
+                    cached_objects.objects.insert(
+                        id.clone(),
+                        CachedObject {
+                            notify: true,
+                            notified: true,
+                        },
+                    );
+                } else {
+                    cached_objects.objects.insert(
+                        id.clone(),
+                        CachedObject {
+                            notify: false,
+                            notified: false,
+                        },
+                    );
+                }
+            }
+        }
+    }
+
+    if let Err(e) = save_to_cache(cache_path, &cached_objects).await {
+        eprintln!("Failed to save cache: {e}");
+    }
+
+    Ok(ApiResponse {
+        data: objects_to_notify,
+    })
 }
