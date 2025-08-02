@@ -2,7 +2,7 @@ mod anytype;
 mod config;
 mod matrix;
 
-use crate::anytype::sentinel;
+use crate::anytype::sentinel::find_new_objects;
 use crate::matrix::client::{RoomId, set_client};
 
 use dotenv::dotenv;
@@ -26,13 +26,19 @@ async fn main() {
 
     let anytype_url = Url(std::env::var("ANYTYPE_URL").expect("ANYTYPE_URL must be set in .env."));
 
-    let new_objects = match sentinel::find_new_objects(&anytype_url).await {
+    let new_objects = match find_new_objects(&anytype_url).await {
         Ok(data) => data,
-        Err(message) => {
-            eprintln!("Error: {message}");
+        Err(e) => {
+            eprintln!("Errot: find_new_objects failed: {:#}", e);
             process::exit(1);
         }
     };
+
+    println!("Found {} new objects", new_objects.data.len());
+    if new_objects.data.is_empty() {
+        println!("Nothing to do, exiting.");
+        return;
+    }
 
     let matrix_server =
         Url(std::env::var("MATRIX_SERVER").expect("MATRIX_SERVER must be set in .env."));
@@ -57,8 +63,6 @@ async fn main() {
     let room_id =
         RoomId(std::env::var("MATRIX_ROOM_ID").expect("MATRIX_ROOM_ID must be set in .env."));
 
-    println!("Found {} new objects", new_objects.data.len());
-
     for o in &new_objects.data {
         let name = &o.name;
         let snippet = o.snippet.as_deref().unwrap_or("<no snippet>");
@@ -70,7 +74,9 @@ async fn main() {
             .and_then(|p| p.date.as_deref())
             .unwrap_or("<no creation date>");
 
-        let message = format!("Название таски: {name}\nДетали: {snippet}\nДата создания: {date}");
+        let message = format!(
+            "Обнаружена новая задача:\n{name}\n\nДетали: {snippet}\n\nДата создания: {date}"
+        );
 
         match matrix_client
             .room()
