@@ -29,7 +29,7 @@ async fn main() {
     let new_objects = match find_new_objects(&anytype_url).await {
         Ok(data) => data,
         Err(e) => {
-            eprintln!("Errot: find_new_objects failed: {:#}", e);
+            eprintln!("Errot: find_new_objects failed: {e:#}");
             process::exit(1);
         }
     };
