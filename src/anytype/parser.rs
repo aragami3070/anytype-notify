@@ -17,7 +17,17 @@ pub async fn get_anytype_objects(url: &Url, token: &Token) -> Result<ApiResponse
 
     let response = client.get(url.0.clone()).headers(headers).send().await?;
 
-    let body = response.json::<ApiResponse>().await?;
+    if !response.status().is_success() {
+        let status = response.status();
+        let body = response.text().await.unwrap_or_default();
+        return Err(format!("Error: bad status from Anytype API: {status}. Body: {body}").into());
+    }
+
+    let text = response.text().await?;
+    let body: ApiResponse = serde_json::from_str(&text).map_err(|e| {
+        format!("Error: decoding response body: {e}. Raw response: {text}")
+    })?;
 
     Ok(body)
 }
+
