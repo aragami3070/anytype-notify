@@ -24,7 +24,8 @@ pub struct AnytypeObject {
 
 impl AnytypeObject {
     pub fn is_notify_enabled(&self) -> bool {
-        self.properties.iter()
+        self.properties
+            .iter()
             .find(|p| p.key == "notify")
             .and_then(|p| p.checkbox)
             .unwrap_or(false)

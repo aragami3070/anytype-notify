@@ -1,7 +1,4 @@
-use crate::{
-    Token, Url,
-    anytype::entities::api_response::{ApiResponse},
-};
+use crate::{Token, Url, anytype::entities::api_response::ApiResponse};
 
 use reqwest::Client;
 use reqwest::header::HeaderMap;
@@ -24,10 +21,8 @@ pub async fn get_anytype_objects(url: &Url, token: &Token) -> Result<ApiResponse
     }
 
     let text = response.text().await?;
-    let body: ApiResponse = serde_json::from_str(&text).map_err(|e| {
-        format!("Error: decoding response body: {e}. Raw response: {text}")
-    })?;
+    let body: ApiResponse = serde_json::from_str(&text)
+        .map_err(|e| format!("Error: decoding response body: {e}. Raw response: {text}"))?;
 
     Ok(body)
 }
-
