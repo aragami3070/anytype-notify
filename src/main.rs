@@ -1,5 +1,4 @@
 mod anytype;
-mod config;
 mod matrix;
 
 use crate::anytype::sentinel::find_new_objects;
