@@ -1,4 +1,4 @@
-FROM rust:1.88.0-alpine3.22 as builder
+FROM rust:1.88.0-alpine3.22 AS builder
 
 RUN apk add --no-cache musl-dev perl make pkgconfig openssl-libs-static openssl-dev
 RUN apk add --no-cache --upgrade bash

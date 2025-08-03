@@ -22,6 +22,16 @@ pub struct AnytypeObject {
     pub type_field: Option<ObjectType>,
 }
 
+impl AnytypeObject {
+    pub fn is_notify_enabled(&self) -> bool {
+        self.properties
+            .iter()
+            .find(|p| p.key == "notify")
+            .and_then(|p| p.checkbox)
+            .unwrap_or(false)
+    }
+}
+
 #[allow(dead_code)]
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Icon {
