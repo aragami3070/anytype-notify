@@ -30,6 +30,14 @@ impl AnytypeObject {
             .and_then(|p| p.checkbox)
             .unwrap_or(false)
     }
+
+    pub fn assignee(&self) -> Vec<String> {
+        self.properties
+            .iter()
+            .find(|p| p.key == "assignee")
+            .and_then(|p| p.objects.clone())
+            .unwrap_or_default()
+    }
 }
 
 #[allow(dead_code)]
