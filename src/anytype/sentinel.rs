@@ -45,11 +45,13 @@ pub async fn find_new_objects(anytype_url: &Url) -> Result<ApiResponse, Box<dyn 
         for o in &current_objects.data {
             let id = &o.id;
             let notify_flag = o.is_notify_enabled();
+            let assignee = o.assignee();
             initial_cache.objects.insert(
                 id.clone(),
                 CachedObject {
                     notify: notify_flag,
                     notified: notify_flag,
+                    assignee: assignee,
                 },
             );
         }
@@ -68,19 +70,24 @@ pub async fn find_new_objects(anytype_url: &Url) -> Result<ApiResponse, Box<dyn 
     for o in &current_objects.data {
         let id = &o.id;
         let notify_flag = o.is_notify_enabled();
+        let assignee = o.assignee();
 
         match cached_objects.objects.get_mut(id) {
             Some(obj) => {
+                // Object exists in cache
                 if notify_flag && !obj.notified {
                     objects_to_notify.push(o.clone());
                     obj.notify = true;
                     obj.notified = true;
+                    obj.assignee = assignee;
                 } else if !notify_flag {
                     obj.notify = false;
                     obj.notified = false;
+                    obj.assignee = assignee;
                 }
             }
             None => {
+                // Object doesn't exist in cache
                 if notify_flag {
                     objects_to_notify.push(o.clone());
                     cached_objects.objects.insert(
@@ -88,6 +95,7 @@ pub async fn find_new_objects(anytype_url: &Url) -> Result<ApiResponse, Box<dyn 
                         CachedObject {
                             notify: true,
                             notified: true,
+                            assignee: assignee,
                         },
                     );
                 } else {
@@ -96,6 +104,7 @@ pub async fn find_new_objects(anytype_url: &Url) -> Result<ApiResponse, Box<dyn 
                         CachedObject {
                             notify: false,
                             notified: false,
+                            assignee: assignee,
                         },
                     );
                 }
