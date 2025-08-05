@@ -5,6 +5,7 @@ use std::collections::HashMap;
 pub struct CachedObject {
     pub notify: bool,
     pub notified: bool,
+    pub assignee: Vec<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Default)]
