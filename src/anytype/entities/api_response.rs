@@ -38,6 +38,14 @@ impl AnytypeObject {
             .and_then(|p| p.objects.clone())
             .unwrap_or_default()
     }
+
+    pub fn proposed_by(&self) -> Vec<String> {
+        self.properties
+            .iter()
+            .find(|p| p.name == "Proposed by")
+            .and_then(|p| p.objects.clone())
+            .unwrap_or_default()
+    }
 }
 
 #[allow(dead_code)]
