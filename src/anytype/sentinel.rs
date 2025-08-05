@@ -46,12 +46,14 @@ pub async fn find_new_objects(anytype_url: &Url) -> Result<ApiResponse, Box<dyn 
             let id = &o.id;
             let notify_flag = o.is_notify_enabled();
             let assignee = o.assignee();
+            let proposed_by = o.proposed_by();
             initial_cache.objects.insert(
                 id.clone(),
                 CachedObject {
                     notify: notify_flag,
                     notified: notify_flag,
                     assignee: assignee,
+                    proposed_by: proposed_by,
                 },
             );
         }
@@ -71,6 +73,7 @@ pub async fn find_new_objects(anytype_url: &Url) -> Result<ApiResponse, Box<dyn 
         let id = &o.id;
         let notify_flag = o.is_notify_enabled();
         let assignee = o.assignee();
+        let proposed_by = o.proposed_by();
 
         match cached_objects.objects.get_mut(id) {
             Some(obj) => {
@@ -80,10 +83,12 @@ pub async fn find_new_objects(anytype_url: &Url) -> Result<ApiResponse, Box<dyn 
                     obj.notify = true;
                     obj.notified = true;
                     obj.assignee = assignee;
+                    obj.proposed_by = proposed_by;
                 } else if !notify_flag {
                     obj.notify = false;
                     obj.notified = false;
                     obj.assignee = assignee;
+                    obj.proposed_by = proposed_by;
                 }
             }
             None => {
@@ -96,6 +101,7 @@ pub async fn find_new_objects(anytype_url: &Url) -> Result<ApiResponse, Box<dyn 
                             notify: true,
                             notified: true,
                             assignee: assignee,
+                            proposed_by: proposed_by,
                         },
                     );
                 } else {
@@ -105,6 +111,7 @@ pub async fn find_new_objects(anytype_url: &Url) -> Result<ApiResponse, Box<dyn 
                             notify: false,
                             notified: false,
                             assignee: assignee,
+                            proposed_by: proposed_by,
                         },
                     );
                 }
