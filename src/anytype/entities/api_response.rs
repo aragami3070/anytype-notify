@@ -46,6 +46,15 @@ impl AnytypeObject {
             .and_then(|p| p.objects.clone())
             .unwrap_or_default()
     }
+
+    pub fn creation_date(&self) -> String {
+        self.properties
+            .iter()
+            .find(|p| p.key == "created_date")
+            .and_then(|p| p.date.as_deref())
+            .unwrap_or("<no creation date>")
+            .to_string()
+    }
 }
 
 #[allow(dead_code)]
