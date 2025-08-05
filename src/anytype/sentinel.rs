@@ -1,7 +1,7 @@
 use crate::{
     Token, Url,
-    anytype::entities::api_response::{AnytypeObject, ApiResponse},
     anytype::entities::cache::{AnytypeCache, CachedObject},
+    anytype::entities::notification::{NotificationObject, Notifications},
     anytype::parser::get_anytype_objects,
 };
 
@@ -30,7 +30,7 @@ async fn load_from_cache(path: &str) -> Result<AnytypeCache, Box<dyn Error>> {
 }
 
 /// Find Anytype objects with creation date after last check
-pub async fn find_new_objects(anytype_url: &Url) -> Result<ApiResponse, Box<dyn Error>> {
+pub async fn find_new_objects(anytype_url: &Url) -> Result<Notifications, Box<dyn Error>> {
     let anytype_token =
         Token(std::env::var("ANYTYPE_TOKEN").expect("ANYTYPE_TOKEN must be set in .env."));
 
@@ -62,46 +62,51 @@ pub async fn find_new_objects(anytype_url: &Url) -> Result<ApiResponse, Box<dyn 
             eprintln!("Failed to save initial cache: {e}");
         }
 
-        return Ok(ApiResponse { data: vec![] });
+        return Ok(Notifications { objects: vec![] });
     }
 
     let mut cached_objects = load_from_cache(cache_path).await?;
 
-    let mut objects_to_notify: Vec<AnytypeObject> = Vec::new();
+    let mut objects_to_notify: Vec<NotificationObject> = Vec::new();
 
     for o in &current_objects.data {
         let id = &o.id;
         let notify_flag = o.is_notify_enabled();
-        let assignee = o.assignee();
-        let proposed_by = o.proposed_by();
+        let notification_object = NotificationObject {
+            name: o.name.clone(),
+            snippet: o.snippet.as_deref().unwrap_or("<no snippet>").to_string(),
+            creation_date: o.creation_date(),
+            proposed_by: o.proposed_by(),
+            assignee: o.assignee(),
+        };
 
         match cached_objects.objects.get_mut(id) {
             Some(obj) => {
                 // Object exists in cache
                 if notify_flag && !obj.notified {
-                    objects_to_notify.push(o.clone());
+                    objects_to_notify.push(notification_object.clone());
                     obj.notify = true;
                     obj.notified = true;
-                    obj.assignee = assignee;
-                    obj.proposed_by = proposed_by;
+                    obj.assignee = notification_object.assignee;
+                    obj.proposed_by = notification_object.proposed_by;
                 } else if !notify_flag {
                     obj.notify = false;
                     obj.notified = false;
-                    obj.assignee = assignee;
-                    obj.proposed_by = proposed_by;
+                    obj.assignee = notification_object.assignee;
+                    obj.proposed_by = notification_object.proposed_by;
                 }
             }
             None => {
                 // Object doesn't exist in cache
                 if notify_flag {
-                    objects_to_notify.push(o.clone());
+                    objects_to_notify.push(notification_object.clone());
                     cached_objects.objects.insert(
                         id.clone(),
                         CachedObject {
                             notify: true,
                             notified: true,
-                            assignee: assignee,
-                            proposed_by: proposed_by,
+                            assignee: notification_object.assignee,
+                            proposed_by: notification_object.proposed_by,
                         },
                     );
                 } else {
@@ -110,8 +115,8 @@ pub async fn find_new_objects(anytype_url: &Url) -> Result<ApiResponse, Box<dyn 
                         CachedObject {
                             notify: false,
                             notified: false,
-                            assignee: assignee,
-                            proposed_by: proposed_by,
+                            assignee: notification_object.assignee,
+                            proposed_by: notification_object.proposed_by,
                         },
                     );
                 }
@@ -123,7 +128,7 @@ pub async fn find_new_objects(anytype_url: &Url) -> Result<ApiResponse, Box<dyn 
         eprintln!("Failed to save cache: {e}");
     }
 
-    Ok(ApiResponse {
-        data: objects_to_notify,
+    Ok(Notifications {
+        objects: objects_to_notify,
     })
 }

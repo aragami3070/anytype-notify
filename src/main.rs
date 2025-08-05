@@ -33,8 +33,8 @@ async fn main() {
         }
     };
 
-    println!("Found {} new objects", new_objects.data.len());
-    if new_objects.data.is_empty() {
+    println!("Found {} new objects", new_objects.objects.len());
+    if new_objects.objects.is_empty() {
         println!("Nothing to do, exiting.");
         return;
     }
@@ -62,19 +62,15 @@ async fn main() {
     let room_id =
         RoomId(std::env::var("MATRIX_ROOM_ID").expect("MATRIX_ROOM_ID must be set in .env."));
 
-    for o in &new_objects.data {
+    for o in &new_objects.objects {
         let name = &o.name;
-        let snippet = o.snippet.as_deref().unwrap_or("<no snippet>");
-
-        let date = o
-            .properties
-            .iter()
-            .find(|p| p.key == "created_date")
-            .and_then(|p| p.date.as_deref())
-            .unwrap_or("<no creation date>");
+        let snippet = &o.snippet;
+        let date = &o.creation_date;
+        let assignee = &o.assignee.join(", ");
+        let proposed_by = &o.proposed_by.join(", ");
 
         let message = format!(
-            "Обнаружена новая задача:\n{name}\n\nДетали: {snippet}\n\nДата создания: {date}"
+            "{proposed_by} создал новую задачу:\n{name}\n\nДетали: {snippet}\n\nНазначено: {assignee}\n\nДата создания: {date}"
         );
 
         match matrix_client
