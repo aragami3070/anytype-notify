@@ -16,6 +16,6 @@ pub struct Notifications {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct AnytypeToMatrixMap {
+pub struct AnytypeToMatrixIdMap {
     pub map: HashMap<String, String>, // anytype_id -> matrix_id
 }

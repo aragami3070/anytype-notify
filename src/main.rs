@@ -15,7 +15,7 @@ pub struct Url(pub String);
 pub struct Token(pub String);
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct AnytypeToMatrixMapType(pub String);
+pub struct AnytypeToMatrixIdMapType(pub String);
 
 #[tokio::main]
 async fn main() {
