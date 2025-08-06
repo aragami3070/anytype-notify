@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NotificationObject {
@@ -12,4 +13,9 @@ pub struct NotificationObject {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Notifications {
     pub objects: Vec<NotificationObject>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct AnytypeToMatrixMap {
+    pub map: HashMap<String, String>, // anytype_id -> matrix_id
 }
