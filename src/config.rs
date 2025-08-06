@@ -1,4 +1,4 @@
-use crate::RequiredTypes;
+use crate::AnytypeToMatrixMapType;
 
 use serde::Deserialize;
 use config::Config;
@@ -6,7 +6,7 @@ use std::error::Error;
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct AppConfig {
-    pub required_types: RequiredTypes,
+    pub required_types: AnytypeToMatrixMapType,
 	#[allow(dead_code)]
     pub interval_minutes: i64,
 }

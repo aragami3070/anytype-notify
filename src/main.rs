@@ -15,9 +15,7 @@ pub struct Url(pub String);
 pub struct Token(pub String);
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct RequiredTypes {
-    pub types: Vec<String>,
-}
+pub struct AnytypeToMatrixMapType(pub String);
 
 #[tokio::main]
 async fn main() {
@@ -70,7 +68,7 @@ async fn main() {
         let proposed_by = &o.proposed_by.join(", ");
 
         let message = format!(
-            "{proposed_by} создал новую задачу:\n{name}\n\nДетали: {snippet}\n\nНазначено: {assignee}\n\nДата создания: {date}"
+            "<a href=\"https://matrix.to/#/@anytype-notifier:m.aboba.org\">@ezhkin-kot:m.aboba.org</a> создал новую задачу:\n{name}\n\nДетали: {snippet}\n\nНазначено: {assignee}\n\nДата создания: {date}"
         );
 
         match matrix_client
