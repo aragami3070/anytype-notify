@@ -55,8 +55,6 @@ async fn main() {
             }
         };
 
-    println!("{:#?}", matrix_id_map);
-
     let matrix_server =
         Url(std::env::var("MATRIX_SERVER").expect("MATRIX_SERVER must be set in .env."));
 
