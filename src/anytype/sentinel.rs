@@ -30,10 +30,7 @@ async fn load_from_cache(path: &str) -> Result<AnytypeCache, Box<dyn Error>> {
 }
 
 /// Find Anytype objects with creation date after last check
-pub async fn find_new_objects(anytype_url: &Url) -> Result<Notifications, Box<dyn Error>> {
-    let anytype_token =
-        Token(std::env::var("ANYTYPE_TOKEN").expect("ANYTYPE_TOKEN must be set in .env."));
-
+pub async fn find_new_objects(anytype_url: &Url, anytype_token: &Token) -> Result<Notifications, Box<dyn Error>> {
     let cache_path = "assets/cache.json";
 
     let current_objects = get_anytype_objects(anytype_url, &anytype_token).await?;

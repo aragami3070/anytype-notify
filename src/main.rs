@@ -32,7 +32,7 @@ async fn main() {
     let config = AppConfig::from_file("config.toml").unwrap();
     let id_map_type = config.anytype_to_matrix_id_map_type;
 
-    let new_objects = match find_new_objects(&anytype_url).await {
+    let new_objects = match find_new_objects(&anytype_url, &anytype_token).await {
         Ok(data) => data,
         Err(e) => {
             eprintln!("Error: find_new_objects failed: {e:#}");
