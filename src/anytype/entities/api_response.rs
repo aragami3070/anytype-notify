@@ -60,7 +60,7 @@ impl AnytypeObject {
                 match DateTime::parse_from_rfc3339(date_str) {
                     Ok(dt) => {
                         let local_time = dt.with_timezone(&Local);
-                        local_time.format("%Y-%m-%d, %H:%M").to_string()
+                        local_time.format("%-d %B %Y, %H:%M").to_string()
                     }
                     Err(_) => format!("Invalid date format: {}", date_str),
                 }
@@ -81,7 +81,7 @@ impl AnytypeObject {
                 match DateTime::parse_from_rfc3339(date_str) {
                     Ok(dt) => {
                         let local_time = dt.with_timezone(&Local);
-                        local_time.format("%Y-%m-%d").to_string()
+                        local_time.format("%-d %B %Y").to_string()
                     }
                     Err(_) => format!("Invalid date format: {}", date_str),
                 }
