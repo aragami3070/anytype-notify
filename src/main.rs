@@ -97,7 +97,7 @@ async fn main() {
             .join(", ");
 
         let message = format!(
-            "{proposed_by} создал новую задачу:\n{name}\n\n{snippet}\n\nНазначено: {assignee}\n\nДата создания: {creation_date}\nДедлайн: {due_date}"
+            "От {proposed_by} поступила новая задача:\n{name}\n\n{snippet}\n\nНазначено: {assignee}\n\nДата создания: {creation_date}\nДедлайн: {due_date}"
         );
 
         match matrix_client
