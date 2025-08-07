@@ -2,12 +2,14 @@ mod anytype;
 mod config;
 mod matrix;
 
-use crate::anytype::{
-    parser::{find_matrix_user_id, get_anytype_to_matrix_map},
-    sentinel::find_new_objects,
+use crate::{
+    anytype::{
+        parser::{find_matrix_user_id, get_anytype_to_matrix_map},
+        sentinel::find_new_objects,
+    },
+    config::AppConfig,
+    matrix::client::{RoomId, set_client},
 };
-use crate::config::AppConfig;
-use crate::matrix::client::{RoomId, set_client};
 
 use dotenv::dotenv;
 use serde::{Deserialize, Serialize};
@@ -24,13 +26,13 @@ pub struct AnytypeToMatrixIdMapType(pub String);
 
 #[tokio::main]
 async fn main() {
-    dotenv().ok();
+    dotenv().ok(); // Load .env
 
-    let anytype_url = Url(std::env::var("ANYTYPE_URL").expect("ANYTYPE_URL must be set in .env."));
+    let anytype_url = Url(std::env::var("ANYTYPE_URL").expect("ANYTYPE_URL must be set in .env.")); // Anytype space URL
     let anytype_token =
-        Token(std::env::var("ANYTYPE_TOKEN").expect("ANYTYPE_TOKEN must be set in .env."));
-    let config = AppConfig::from_file("config.toml").unwrap();
-    let id_map_type = config.anytype_to_matrix_id_map_type;
+        Token(std::env::var("ANYTYPE_TOKEN").expect("ANYTYPE_TOKEN must be set in .env.")); // Anytype API token
+    let config = AppConfig::from_file("config.toml").unwrap(); // Load config from config.toml
+    let id_map_type = config.anytype_to_matrix_id_map_type; // Anytype object type which contains the "anytype_id" and "matrix_id" properties
 
     let new_objects = match find_new_objects(&anytype_url, &anytype_token).await {
         Ok(data) => data,
@@ -41,11 +43,13 @@ async fn main() {
     };
 
     println!("Found {} new objects", new_objects.objects.len());
+    // Check if there are no new objects
     if new_objects.objects.is_empty() {
         println!("Nothing to do, exiting.");
         return;
     }
 
+    // Get mapping for finding matrix user ids by anytype space member ids
     let matrix_id_map =
         match get_anytype_to_matrix_map(&anytype_url, &anytype_token, &id_map_type.0).await {
             Ok(data) => data,
@@ -78,11 +82,13 @@ async fn main() {
     let room_id =
         RoomId(std::env::var("MATRIX_ROOM_ID").expect("MATRIX_ROOM_ID must be set in .env."));
 
+    // Create and send notifications for all new objects
     for o in &new_objects.objects {
         let name = &o.name;
         let snippet = &o.snippet;
         let creation_date = &o.creation_date;
         let due_date = &o.due_date;
+        // Get matrix user ids using mapping
         let assignee = &o
             .assignee
             .iter()

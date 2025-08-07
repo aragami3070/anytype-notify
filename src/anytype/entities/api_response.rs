@@ -48,6 +48,7 @@ impl AnytypeObject {
             .unwrap_or_default()
     }
 
+    /// Get the name of the month in Russian
     fn month_name(local_time: DateTime<Local>) -> String {
         let month_name = match local_time.month() {
             1 => "января",
@@ -75,6 +76,7 @@ impl AnytypeObject {
             .find(|p| p.key == "created_date")
             .and_then(|p| p.date.as_deref());
 
+        // Date and time formatting and converting it from UTC to local
         match raw {
             Some(date_str) => match DateTime::parse_from_rfc3339(date_str) {
                 Ok(dt) => {
@@ -101,6 +103,7 @@ impl AnytypeObject {
             .find(|p| p.key == "due_date")
             .and_then(|p| p.date.as_deref());
 
+        // Date formatting
         match raw {
             Some(date_str) => match DateTime::parse_from_rfc3339(date_str) {
                 Ok(dt) => {

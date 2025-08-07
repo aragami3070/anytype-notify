@@ -3,26 +3,37 @@ use crate::{
     anytype::entities::{api_response::ApiResponse, notification::AnytypeToMatrixIdMap},
 };
 
-use reqwest::Client;
-use reqwest::header::HeaderMap;
+use reqwest::{Client, header::HeaderMap};
 use std::{collections::HashMap, error::Error};
 
 /// Get all Anytype objects from space
-pub async fn get_anytype_objects(url: &Url, token: &Token) -> Result<ApiResponse, Box<dyn Error>> {
+pub async fn get_anytype_objects(
+    anytype_url: &Url,
+    anytype_token: &Token,
+) -> Result<ApiResponse, Box<dyn Error>> {
     let client = Client::builder().build()?;
 
     let mut headers = HeaderMap::new();
     headers.insert("Accept", "application/json".parse()?);
-    headers.insert("Authorization", format!("Bearer {}", token.0).parse()?);
+    headers.insert(
+        "Authorization",
+        format!("Bearer {}", anytype_token.0).parse()?,
+    ); // Anytype API token
 
-    let response = client.get(url.0.clone()).headers(headers).send().await?;
+    let response = client
+        .get(anytype_url.0.clone())
+        .headers(headers)
+        .send()
+        .await?;
 
+    // Check if the request was unsuccessful
     if !response.status().is_success() {
         let status = response.status();
         let body = response.text().await.unwrap_or_default();
         return Err(format!("Error: bad status from Anytype API: {status}. Body: {body}").into());
     }
 
+    // Decode the response to ApiResponse structure
     let text = response.text().await?;
     let body: ApiResponse = serde_json::from_str(&text)
         .map_err(|e| format!("Error: decoding response body: {e}. Raw response: {text}"))?;
@@ -30,19 +41,22 @@ pub async fn get_anytype_objects(url: &Url, token: &Token) -> Result<ApiResponse
     Ok(body)
 }
 
+/// Get a mapping for finding the matrix id of the user by the anytype space member id
 pub async fn get_anytype_to_matrix_map(
-    url: &Url,
-    token: &Token,
-    map_type: &str,
+    anytype_url: &Url,
+    anytype_token: &Token,
+    map_type: &str, // The name of the Anytype object type which contains the "anytype_id" and "matrix_id" properties
 ) -> Result<AnytypeToMatrixIdMap, Box<dyn Error>> {
     let mut map = HashMap::new();
-    let all_objects = get_anytype_objects(url, token).await?;
+    let all_objects = get_anytype_objects(anytype_url, anytype_token).await?;
 
     for o in &all_objects.data {
+        // Skip objects that are not of the specified type
         if o.type_field.as_ref().map(|t| t.key.as_str()) != Some(map_type) {
             continue;
         }
 
+        // Find the "anytype_id" and "matrix_id" properties
         let anytype_id = o
             .properties
             .iter()
@@ -58,6 +72,7 @@ pub async fn get_anytype_to_matrix_map(
             .and_then(|p| p.text.as_ref())
             .cloned();
 
+        // If both properties are found, add them to the map
         if let (Some(anytype_id), Some(matrix_id)) = (anytype_id, matrix_id) {
             map.insert(anytype_id, matrix_id);
         }
@@ -66,6 +81,7 @@ pub async fn get_anytype_to_matrix_map(
     Ok(AnytypeToMatrixIdMap { map })
 }
 
+/// Find the matrix id of the user by the anytype space member id in the map
 pub fn find_matrix_user_id(map: &AnytypeToMatrixIdMap, anytype_id: &str) -> String {
     map.map
         .get(anytype_id)
