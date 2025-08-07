@@ -1,3 +1,4 @@
+use chrono::{DateTime, Local};
 use serde::{Deserialize, Serialize};
 
 #[allow(dead_code)]
@@ -48,21 +49,45 @@ impl AnytypeObject {
     }
 
     pub fn creation_date(&self) -> String {
-        self.properties
+        let raw = self
+            .properties
             .iter()
             .find(|p| p.key == "created_date")
-            .and_then(|p| p.date.as_deref())
-            .unwrap_or("<no creation date>")
-            .to_string()
+            .and_then(|p| p.date.as_deref());
+
+        match raw {
+            Some(date_str) => {
+                match DateTime::parse_from_rfc3339(date_str) {
+                    Ok(dt) => {
+                        let local_time = dt.with_timezone(&Local);
+                        local_time.format("%Y-%m-%d, %H:%M").to_string()
+                    }
+                    Err(_) => format!("Invalid date format: {}", date_str),
+                }
+            }
+            None => "<no creation date>".to_string(),
+        }
     }
 
     pub fn due_date(&self) -> String {
-        self.properties
+        let raw = self
+            .properties
             .iter()
             .find(|p| p.key == "due_date")
-            .and_then(|p| p.date.as_deref())
-            .unwrap_or("<no deadline>")
-            .to_string()
+            .and_then(|p| p.date.as_deref());
+
+        match raw {
+            Some(date_str) => {
+                match DateTime::parse_from_rfc3339(date_str) {
+                    Ok(dt) => {
+                        let local_time = dt.with_timezone(&Local);
+                        local_time.format("%Y-%m-%d").to_string()
+                    }
+                    Err(_) => format!("Invalid date format: {}", date_str),
+                }
+            }
+            None => "<no deadline>".to_string(),
+        }
     }
 }
 
