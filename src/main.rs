@@ -1,7 +1,12 @@
 mod anytype;
+mod config;
 mod matrix;
 
-use crate::anytype::sentinel::find_new_objects;
+use crate::anytype::{
+    parser::{find_matrix_user_id, get_anytype_to_matrix_map},
+    sentinel::find_new_objects,
+};
+use crate::config::AppConfig;
 use crate::matrix::client::{RoomId, set_client};
 
 use dotenv::dotenv;
@@ -22,6 +27,10 @@ async fn main() {
     dotenv().ok();
 
     let anytype_url = Url(std::env::var("ANYTYPE_URL").expect("ANYTYPE_URL must be set in .env."));
+    let anytype_token =
+        Token(std::env::var("ANYTYPE_TOKEN").expect("ANYTYPE_TOKEN must be set in .env."));
+    let config = AppConfig::from_file("config.toml").unwrap();
+    let id_map_type = config.anytype_to_matrix_id_map_type;
 
     let new_objects = match find_new_objects(&anytype_url).await {
         Ok(data) => data,
@@ -36,6 +45,17 @@ async fn main() {
         println!("Nothing to do, exiting.");
         return;
     }
+
+    let matrix_id_map =
+        match get_anytype_to_matrix_map(&anytype_url, &anytype_token, &id_map_type.0).await {
+            Ok(data) => data,
+            Err(e) => {
+                eprintln!("Error: can not get anytype to matrix id mapping: {e:#}");
+                process::exit(1);
+            }
+        };
+
+    println!("{:#?}", matrix_id_map);
 
     let matrix_server =
         Url(std::env::var("MATRIX_SERVER").expect("MATRIX_SERVER must be set in .env."));
@@ -64,11 +84,21 @@ async fn main() {
         let name = &o.name;
         let snippet = &o.snippet;
         let date = &o.creation_date;
-        let assignee = &o.assignee.join(", ");
-        let proposed_by = &o.proposed_by.join(", ");
+        let assignee = &o
+            .assignee
+            .iter()
+            .map(|a| find_matrix_user_id(&matrix_id_map, a.as_str()))
+            .collect::<Vec<String>>()
+            .join(", ");
+        let proposed_by = &o
+            .proposed_by
+            .iter()
+            .map(|p| find_matrix_user_id(&matrix_id_map, p.as_str()))
+            .collect::<Vec<String>>()
+            .join(", ");
 
         let message = format!(
-            "<a href=\"https://matrix.to/#/@anytype-notifier:m.aboba.org\">@ezhkin-kot:m.aboba.org</a> создал новую задачу:\n{name}\n\nДетали: {snippet}\n\nНазначено: {assignee}\n\nДата создания: {date}"
+            "{proposed_by} создал новую задачу:\n{name}\n\nДетали: {snippet}\n\nНазначено: {assignee}\n\nДата создания: {date}"
         );
 
         match matrix_client
@@ -82,9 +112,8 @@ async fn main() {
                 process::exit(1);
             }
         };
-        println!("name: {name}");
-        println!("snippet: {snippet}");
-        println!("creation date: {date}");
+        println!("Notification text:");
+        println!("{message}");
         println!();
     }
 }
