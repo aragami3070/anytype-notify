@@ -81,7 +81,8 @@ async fn main() {
     for o in &new_objects.objects {
         let name = &o.name;
         let snippet = &o.snippet;
-        let date = &o.creation_date;
+        let creation_date = &o.creation_date;
+        let due_date = &o.due_date;
         let assignee = &o
             .assignee
             .iter()
@@ -96,7 +97,7 @@ async fn main() {
             .join(", ");
 
         let message = format!(
-            "{proposed_by} создал новую задачу:\n{name}\n\nДетали: {snippet}\n\nНазначено: {assignee}\n\nДата создания: {date}"
+            "{proposed_by} создал новую задачу:\n{name}\n\nДетали: {snippet}\n\nНазначено: {assignee}\n\nДата создания: {creation_date}\nДедлайн: {due_date}"
         );
 
         match matrix_client

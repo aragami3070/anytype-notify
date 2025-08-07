@@ -55,6 +55,15 @@ impl AnytypeObject {
             .unwrap_or("<no creation date>")
             .to_string()
     }
+
+    pub fn due_date(&self) -> String {
+        self.properties
+            .iter()
+            .find(|p| p.key == "due_date")
+            .and_then(|p| p.date.as_deref())
+            .unwrap_or("<no deadline>")
+            .to_string()
+    }
 }
 
 #[allow(dead_code)]

@@ -72,6 +72,7 @@ pub async fn find_new_objects(anytype_url: &Url, anytype_token: &Token) -> Resul
         let notification_object = NotificationObject {
             name: o.name.clone(),
             snippet: o.snippet.as_deref().unwrap_or("<no snippet>").to_string(),
+            due_date: o.due_date(),
             creation_date: o.creation_date(),
             proposed_by: o.proposed_by(),
             assignee: o.assignee(),
