@@ -33,7 +33,7 @@ async fn load_from_cache(path: &str) -> Result<AnytypeCache, Box<dyn Error>> {
 pub async fn find_new_objects(anytype_url: &Url, anytype_token: &Token) -> Result<Notifications, Box<dyn Error>> {
     let cache_path = "assets/cache.json";
 
-    let current_objects = get_anytype_objects(anytype_url, &anytype_token).await?;
+    let current_objects = get_anytype_objects(anytype_url, anytype_token).await?;
 
     if !Path::new(cache_path).exists() {
         println!("Cache not found. Saving current objects and exiting.");
@@ -49,8 +49,8 @@ pub async fn find_new_objects(anytype_url: &Url, anytype_token: &Token) -> Resul
                 CachedObject {
                     notify: notify_flag,
                     notified: notify_flag,
-                    assignee: assignee,
-                    proposed_by: proposed_by,
+                    assignee,
+                    proposed_by,
                 },
             );
         }

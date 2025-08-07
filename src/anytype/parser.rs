@@ -36,7 +36,7 @@ pub async fn get_anytype_to_matrix_map(
     map_type: &str,
 ) -> Result<AnytypeToMatrixIdMap, Box<dyn Error>> {
     let mut map = HashMap::new();
-    let all_objects = get_anytype_objects(url, &token).await?;
+    let all_objects = get_anytype_objects(url, token).await?;
 
     for o in &all_objects.data {
         if o.type_field.as_ref().map(|t| t.key.as_str()) != Some(map_type) {
@@ -48,7 +48,7 @@ pub async fn get_anytype_to_matrix_map(
             .iter()
             .find(|p| p.key == "anytype_id")
             .and_then(|p| p.objects.as_ref())
-            .and_then(|obj| obj.get(0))
+            .and_then(|obj| obj.first())
             .cloned();
 
         let matrix_id = o
@@ -63,7 +63,7 @@ pub async fn get_anytype_to_matrix_map(
         }
     }
 
-    Ok(AnytypeToMatrixIdMap { map: map })
+    Ok(AnytypeToMatrixIdMap { map })
 }
 
 pub fn find_matrix_user_id(map: &AnytypeToMatrixIdMap, anytype_id: &str) -> String {

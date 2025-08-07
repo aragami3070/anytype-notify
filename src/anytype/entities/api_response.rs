@@ -88,7 +88,7 @@ impl AnytypeObject {
                         time = local_time.format("%H:%M")
                     )
                 }
-                Err(_) => format!("Invalid date format: {}", date_str),
+                Err(_) => format!("Invalid date format: {date_str}"),
             },
             None => "<no creation date>".to_string(),
         }
@@ -111,7 +111,7 @@ impl AnytypeObject {
 
                     format!("{day} {month} {year}")
                 }
-                Err(_) => format!("Invalid date format: {}", date_str),
+                Err(_) => format!("Invalid date format: {date_str}"),
             },
             None => "<no deadline>".to_string(),
         }
