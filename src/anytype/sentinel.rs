@@ -140,6 +140,7 @@ pub async fn find_new_objects(
 
         match cached_objects.objects.get_mut(id) {
             Some(obj) => {
+                // Object exists in cache
                 process_cached_object(
                     obj,
                     notify_flag,
@@ -149,6 +150,7 @@ pub async fn find_new_objects(
                 .await
             }
             None => {
+                // Object doesn't exist in cache
                 process_new_object(
                     id,
                     notify_flag,
