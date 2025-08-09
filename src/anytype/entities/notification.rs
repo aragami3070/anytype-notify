@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::{collections::HashMap, error::Error};
+
+use crate::anytype::entities::api_response::AnytypeObject;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NotificationObject {
@@ -9,6 +11,23 @@ pub struct NotificationObject {
     pub due_date: String,
     pub proposed_by: Vec<String>,
     pub assignee: Vec<String>,
+}
+
+impl NotificationObject {
+    pub fn new(object: &AnytypeObject) -> Result<Self, Box<dyn Error>> {
+        Ok(Self {
+            name: object.name.clone(),
+            snippet: object
+                .snippet
+                .as_deref()
+                .unwrap_or("<no snippet>")
+                .to_string(),
+            due_date: object.due_date(),
+            creation_date: object.creation_date(),
+            proposed_by: object.proposed_by(),
+            assignee: object.assignee(),
+        })
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]

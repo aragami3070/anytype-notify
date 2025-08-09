@@ -1,10 +1,13 @@
 use crate::{
     Token, Url,
-    anytype::entities::{
-        cache::{AnytypeCache, CachedObject},
-        notification::{NotificationObject, Notifications},
+    anytype::{
+        entities::{
+            api_response::ApiResponse,
+            cache::{AnytypeCache, CachedObject},
+            notification::{NotificationObject, Notifications},
+        },
+        parser::get_anytype_objects,
     },
-    anytype::parser::get_anytype_objects,
 };
 
 use std::{
@@ -34,6 +37,80 @@ async fn load_from_cache(path: &str) -> Result<AnytypeCache, Box<dyn Error>> {
     Ok(cache)
 }
 
+/// Create initial cache with actual objects at the first run
+async fn set_initial_cache(
+    current_objects: ApiResponse,
+    cache_path: &str,
+) -> Result<Notifications, Box<dyn Error>> {
+    let mut initial_cache = AnytypeCache::default();
+
+    for o in &current_objects.data {
+        let id = &o.id;
+        let notify_flag = o.is_notify_enabled();
+        let assignee = o.assignee();
+        let proposed_by = o.proposed_by();
+        initial_cache.objects.insert(
+            id.clone(),
+            CachedObject {
+                notify: notify_flag,
+                // If notify is enabled, set cached object to already notified for the first run
+                notified: notify_flag,
+                assignee,
+                proposed_by,
+            },
+        );
+    }
+
+    if let Err(e) = save_to_cache(cache_path, &initial_cache).await {
+        eprintln!("Failed to save initial cache: {e}");
+    }
+
+    Ok(Notifications { objects: vec![] })
+}
+
+async fn process_cached_object(
+    object: &mut CachedObject,
+    notify_flag: bool,
+    notification_object: &NotificationObject,
+    objects_to_notify: &mut Vec<NotificationObject>,
+) {
+    if notify_flag && !object.notified {
+        // Object is not already notified and need notification
+        objects_to_notify.push(notification_object.clone());
+        object.notify = true;
+        object.notified = true;
+    } else if !notify_flag {
+        // Object has disabled notifications
+        object.notify = false;
+        object.notified = false;
+    }
+
+    // Update the other fields
+    object.assignee = notification_object.assignee.clone();
+    object.proposed_by = notification_object.proposed_by.clone();
+}
+
+async fn process_new_object(
+    id: &str,
+    notify_flag: bool,
+    notification_object: &NotificationObject,
+    cached_objects: &mut AnytypeCache,
+    objects_to_notify: &mut Vec<NotificationObject>,
+) {
+    let cached_object = CachedObject {
+        notify: notify_flag,
+        notified: notify_flag,
+        assignee: notification_object.assignee.clone(),
+        proposed_by: notification_object.proposed_by.clone(),
+    };
+
+    if notify_flag {
+        objects_to_notify.push(notification_object.clone());
+    }
+
+    cached_objects.objects.insert(id.to_string(), cached_object);
+}
+
 /// Find Anytype objects with creation date after last check
 pub async fn find_new_objects(
     anytype_url: &Url,
@@ -43,33 +120,10 @@ pub async fn find_new_objects(
 
     let current_objects = get_anytype_objects(anytype_url, anytype_token).await?;
 
-    // Create initial cache with actual objects at the first run and exit
+    // At the first run create initial cache and exit
     if !Path::new(cache_path).exists() {
         println!("Cache not found. Saving current objects and exiting.");
-        let mut initial_cache = AnytypeCache::default();
-
-        for o in &current_objects.data {
-            let id = &o.id;
-            let notify_flag = o.is_notify_enabled();
-            let assignee = o.assignee();
-            let proposed_by = o.proposed_by();
-            initial_cache.objects.insert(
-                id.clone(),
-                CachedObject {
-                    notify: notify_flag,
-                    // If notify is enabled, set cached object to already notified for the first run
-                    notified: notify_flag,
-                    assignee,
-                    proposed_by,
-                },
-            );
-        }
-
-        if let Err(e) = save_to_cache(cache_path, &initial_cache).await {
-            eprintln!("Failed to save initial cache: {e}");
-        }
-
-        return Ok(Notifications { objects: vec![] });
+        return set_initial_cache(current_objects, cache_path).await;
     }
 
     let mut cached_objects = load_from_cache(cache_path).await?;
@@ -82,55 +136,27 @@ pub async fn find_new_objects(
         let notify_flag = o.is_notify_enabled();
 
         // Create notification content
-        let notification_object = NotificationObject {
-            name: o.name.clone(),
-            snippet: o.snippet.as_deref().unwrap_or("<no snippet>").to_string(),
-            due_date: o.due_date(),
-            creation_date: o.creation_date(),
-            proposed_by: o.proposed_by(),
-            assignee: o.assignee(),
-        };
+        let notification_object = NotificationObject::new(o)?;
 
         match cached_objects.objects.get_mut(id) {
             Some(obj) => {
-                // Object exists in cache
-                if notify_flag && !obj.notified { // Object is not already notified and need notification
-                    objects_to_notify.push(notification_object.clone());
-                    obj.notify = true;
-                    obj.notified = true;
-                    obj.assignee = notification_object.assignee;
-                    obj.proposed_by = notification_object.proposed_by;
-                } else if !notify_flag { // Object has disabled notifications
-                    obj.notify = false;
-                    obj.notified = false;
-                    obj.assignee = notification_object.assignee;
-                    obj.proposed_by = notification_object.proposed_by;
-                }
+                process_cached_object(
+                    obj,
+                    notify_flag,
+                    &notification_object,
+                    &mut objects_to_notify,
+                )
+                .await
             }
             None => {
-                // Object doesn't exist in cache
-                if notify_flag { // New object with enabled notifications
-                    objects_to_notify.push(notification_object.clone());
-                    cached_objects.objects.insert(
-                        id.clone(),
-                        CachedObject {
-                            notify: true,
-                            notified: true,
-                            assignee: notification_object.assignee,
-                            proposed_by: notification_object.proposed_by,
-                        },
-                    );
-                } else { // New object with disabled notifications
-                    cached_objects.objects.insert(
-                        id.clone(),
-                        CachedObject {
-                            notify: false,
-                            notified: false,
-                            assignee: notification_object.assignee,
-                            proposed_by: notification_object.proposed_by,
-                        },
-                    );
-                }
+                process_new_object(
+                    id,
+                    notify_flag,
+                    &notification_object,
+                    &mut cached_objects,
+                    &mut objects_to_notify,
+                )
+                .await
             }
         }
     }
