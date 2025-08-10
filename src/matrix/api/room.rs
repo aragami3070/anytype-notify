@@ -57,12 +57,10 @@ impl Room {
         );
 
         let body = MessageBody {
-            body: format!("@aragami3070:matrix.org {text}"),
-            msgtype: "m.text".to_owned(),
-            format: "org.matrix.custom.html".to_owned(),
-            formatted_body: format!(
-                "<div><a href=\"https://matrix.to/#/@aragami3070:matrix.org\">@aragami3070:matrix.org</a> <p>{text}</p></div>"
-            ),
+            body: "".to_string(),
+            msgtype: "m.text".to_string(),
+            format: "org.matrix.custom.html".to_string(),
+            formatted_body: text.to_string(),
         };
 
         let response = self.client.put(path.trim(), headers, body).await?;
