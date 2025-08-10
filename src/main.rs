@@ -1,5 +1,6 @@
 mod anytype;
 mod config;
+mod dotenv_vars;
 mod matrix;
 
 use crate::{
@@ -15,7 +16,7 @@ use dotenv::dotenv;
 use serde::{Deserialize, Serialize};
 use std::process;
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Url(pub String);
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -28,13 +29,15 @@ pub struct AnytypeToMatrixIdMapType(pub String);
 async fn main() {
     dotenv().ok(); // Load .env
 
-    let anytype_url = Url(std::env::var("ANYTYPE_URL").expect("ANYTYPE_URL must be set in .env.")); // Anytype space URL
-    let anytype_token =
-        Token(std::env::var("ANYTYPE_TOKEN").expect("ANYTYPE_TOKEN must be set in .env.")); // Anytype API token
+    let anytype_env = dotenv_vars::get_anytype_env_vars().unwrap_or_else(|err| {
+        println!("Error: ANYTYPE_TOKEN and ANYTYPE_TOKEN must be set in .env\nDetails: {err}");
+        process::exit(1);
+    });
+
     let config = AppConfig::from_file("config.toml").unwrap(); // Load config from config.toml
     let id_map_type = config.anytype_to_matrix_id_map_type; // Anytype object type which contains the "anytype_id" and "matrix_id" properties
 
-    let new_objects = match find_new_objects(&anytype_url, &anytype_token).await {
+    let new_objects = match find_new_objects(&anytype_env.url, &anytype_env.token).await {
         Ok(data) => data,
         Err(e) => {
             eprintln!("Error: find_new_objects failed: {e:#}");
@@ -51,7 +54,7 @@ async fn main() {
 
     // Get mapping for finding matrix user ids by anytype space member ids
     let matrix_id_map =
-        match get_anytype_to_matrix_map(&anytype_url, &anytype_token, &id_map_type.0).await {
+        match get_anytype_to_matrix_map(&anytype_env.url, &anytype_env.token, &id_map_type.0).await {
             Ok(data) => data,
             Err(e) => {
                 eprintln!("Error: can not get anytype to matrix id mapping: {e:#}");
@@ -83,19 +86,19 @@ async fn main() {
         RoomId(std::env::var("MATRIX_ROOM_ID").expect("MATRIX_ROOM_ID must be set in .env."));
 
     // Create and send notifications for all new objects
-    for o in &new_objects.objects {
-        let name = &o.name;
-        let snippet = &o.snippet;
-        let creation_date = &o.creation_date;
-        let due_date = &o.due_date;
+    for object in &new_objects.objects {
+        let name = &object.name;
+        let snippet = &object.snippet;
+        let creation_date = &object.creation_date;
+        let due_date = &object.due_date;
         // Get matrix user ids using mapping
-        let assignee = &o
+        let assignee = &object
             .assignee
             .iter()
             .map(|a| find_matrix_user_id(&matrix_id_map, a.as_str()))
             .collect::<Vec<String>>()
             .join(", ");
-        let proposed_by = &o
+        let proposed_by = &object
             .proposed_by
             .iter()
             .map(|p| find_matrix_user_id(&matrix_id_map, p.as_str()))
