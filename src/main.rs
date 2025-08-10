@@ -5,7 +5,7 @@ mod matrix;
 
 use crate::{
     anytype::{
-        parser::{find_matrix_user_id, get_anytype_to_matrix_map},
+        parser::get_anytype_to_matrix_map,
         sentinel::find_new_objects,
     },
     config::AppConfig,

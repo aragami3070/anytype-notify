@@ -11,13 +11,7 @@ use crate::{
     },
 };
 
-pub async fn send_message(
-    notify: NotificationObject,
-    matrix_id_map: &AnytypeToMatrixIdMap,
-    matrix_client: &Client,
-    room_id: &RoomId,
-    device_id: &DeviceId,
-) -> Result<(), Box<dyn Error>> {
+fn formatting_message(notify: NotificationObject, matrix_id_map: &AnytypeToMatrixIdMap) -> String {
     let name = &notify.name;
     let snippet = &notify.snippet;
     let creation_date = &notify.creation_date;
@@ -38,9 +32,19 @@ pub async fn send_message(
         .collect::<Vec<String>>()
         .join(", ");
 
-    let message = format!(
+    format!(
         "От {proposed_by} поступила новая задача:\n{name}\n\n{snippet}\n\n{assignee}\n\nДата создания: {creation_date}\nДедлайн: {due_date}"
-    );
+    )
+}
+
+pub async fn send_message(
+    notify: NotificationObject,
+    matrix_id_map: &AnytypeToMatrixIdMap,
+    matrix_client: &Client,
+    room_id: &RoomId,
+    device_id: &DeviceId,
+) -> Result<(), Box<dyn Error>> {
+    let message = formatting_message(notify, &matrix_id_map);
 
     matrix_client
         .room()
