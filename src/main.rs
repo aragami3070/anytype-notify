@@ -9,7 +9,7 @@ use crate::{
         sentinel::find_new_objects,
     },
     config::AppConfig,
-    matrix::client::set_client,
+    matrix::{client::set_client, messages},
 };
 
 use dotenv::dotenv;
@@ -92,42 +92,21 @@ async fn main() {
     .device_id;
 
     // Create and send notifications for all new objects
-    for object in &new_objects.objects {
-        let name = &object.name;
-        let snippet = &object.snippet;
-        let creation_date = &object.creation_date;
-        let due_date = &object.due_date;
-        // Get matrix user ids using mapping
-        let assignee = &object
-            .assignee
-            .iter()
-            .map(|a| find_matrix_user_id(&matrix_id_map, a.as_str()))
-            .collect::<Vec<String>>()
-            .join(", ");
-        let proposed_by = &object
-            .proposed_by
-            .iter()
-            .map(|p| find_matrix_user_id(&matrix_id_map, p.as_str()))
-            .collect::<Vec<String>>()
-            .join(", ");
-
-        let message = format!(
-            "От {proposed_by} поступила новая задача:\n{name}\n\n{snippet}\n\n{assignee}\n\nДата создания: {creation_date}\nДедлайн: {due_date}"
-        );
-
-        match matrix_client
-            .room()
-            .send_message(&matrix_env.room_id, &device_id, message.to_string())
-            .await
+    for object in new_objects.objects {
+        match messages::send_message(
+            object,
+            &matrix_id_map,
+            &matrix_client,
+            &matrix_env.room_id,
+            &device_id,
+        )
+        .await
         {
-            Ok(cl) => cl,
-            Err(message) => {
-                eprintln!("Error: {message}");
+            Ok(_) => {}
+            Err(err) => {
+                eprintln!("Error: {err}");
                 process::exit(1);
             }
-        };
-        println!("Notification text:");
-        println!("{message}");
-        println!();
+        }
     }
 }

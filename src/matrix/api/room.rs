@@ -13,6 +13,8 @@ use crate::matrix::{
 pub struct MessageBody {
     pub body: String,
     pub msgtype: String,
+    pub format: String,
+    pub formatted_body: String,
 }
 
 #[allow(dead_code)]
@@ -55,8 +57,12 @@ impl Room {
         );
 
         let body = MessageBody {
-            body: text,
+            body: format!("@aragami3070:matrix.org {text}"),
             msgtype: "m.text".to_owned(),
+            format: "org.matrix.custom.html".to_owned(),
+            formatted_body: format!(
+                "<div><a href=\"https://matrix.to/#/@aragami3070:matrix.org\">@aragami3070:matrix.org</a> <p>{text}</p></div>"
+            ),
         };
 
         let response = self.client.put(path.trim(), headers, body).await?;

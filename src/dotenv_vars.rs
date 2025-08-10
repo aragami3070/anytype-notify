@@ -27,4 +27,3 @@ pub fn get_matrix_env_vars() -> Result<MatrixVars, Box<dyn Error>> {
 
     Ok(MatrixVars { server, room_id })
 }
-
