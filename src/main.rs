@@ -9,7 +9,7 @@ use crate::{
         sentinel::find_new_objects,
     },
     config::AppConfig,
-    matrix::client::{RoomId, set_client},
+    matrix::client::set_client,
 };
 
 use dotenv::dotenv;
@@ -34,8 +34,14 @@ async fn main() {
         process::exit(1);
     });
 
-    let config = AppConfig::from_file("config.toml").unwrap(); // Load config from config.toml
-    let id_map_type = config.anytype_to_matrix_id_map_type; // Anytype object type which contains the "anytype_id" and "matrix_id" properties
+    // Load config from config.toml
+    let config = AppConfig::from_file("config.toml").unwrap_or_else(|err| {
+        println!("Error: {err}");
+        process::exit(1);
+    });
+
+    // Anytype object type which contains the "anytype_id" and "matrix_id" properties
+    let id_map_type = config.anytype_to_matrix_id_map_type;
 
     let new_objects = match find_new_objects(&anytype_env.url, &anytype_env.token).await {
         Ok(data) => data,
@@ -54,7 +60,8 @@ async fn main() {
 
     // Get mapping for finding matrix user ids by anytype space member ids
     let matrix_id_map =
-        match get_anytype_to_matrix_map(&anytype_env.url, &anytype_env.token, &id_map_type.0).await {
+        match get_anytype_to_matrix_map(&anytype_env.url, &anytype_env.token, &id_map_type.0).await
+        {
             Ok(data) => data,
             Err(e) => {
                 eprintln!("Error: can not get anytype to matrix id mapping: {e:#}");
@@ -62,10 +69,12 @@ async fn main() {
             }
         };
 
-    let matrix_server =
-        Url(std::env::var("MATRIX_SERVER").expect("MATRIX_SERVER must be set in .env."));
+    let matrix_env = dotenv_vars::get_matrix_env_vars().unwrap_or_else(|err| {
+        println!("Error: MATRIX_SERVER and MATRIX_ROOM_ID must be set in .env\nDetails: {err}");
+        process::exit(1);
+    });
 
-    let matrix_client = match set_client(matrix_server).await {
+    let matrix_client = match set_client(matrix_env.server).await {
         Ok(cl) => cl,
         Err(message) => {
             eprintln!("Error: {message}");
@@ -81,9 +90,6 @@ async fn main() {
         }
     }
     .device_id;
-
-    let room_id =
-        RoomId(std::env::var("MATRIX_ROOM_ID").expect("MATRIX_ROOM_ID must be set in .env."));
 
     // Create and send notifications for all new objects
     for object in &new_objects.objects {
@@ -111,7 +117,7 @@ async fn main() {
 
         match matrix_client
             .room()
-            .send_message(&room_id, &device_id, message.to_string())
+            .send_message(&matrix_env.room_id, &device_id, message.to_string())
             .await
         {
             Ok(cl) => cl,
