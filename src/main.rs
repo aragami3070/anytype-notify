@@ -4,10 +4,7 @@ mod dotenv_vars;
 mod matrix;
 
 use crate::{
-    anytype::{
-        parser::get_anytype_to_matrix_map,
-        sentinel::find_new_objects,
-    },
+    anytype::{parser::get_anytype_to_matrix_map, sentinel::find_new_objects},
     config::AppConfig,
     matrix::{client::set_client, messages},
 };
