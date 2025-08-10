@@ -1,8 +1,15 @@
 mod anytype;
+mod config;
 mod matrix;
 
-use crate::anytype::sentinel::find_new_objects;
-use crate::matrix::client::{RoomId, set_client};
+use crate::{
+    anytype::{
+        parser::{find_matrix_user_id, get_anytype_to_matrix_map},
+        sentinel::find_new_objects,
+    },
+    config::AppConfig,
+    matrix::client::{RoomId, set_client},
+};
 
 use dotenv::dotenv;
 use serde::{Deserialize, Serialize};
@@ -15,29 +22,42 @@ pub struct Url(pub String);
 pub struct Token(pub String);
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct RequiredTypes {
-    pub types: Vec<String>,
-}
+pub struct AnytypeToMatrixIdMapType(pub String);
 
 #[tokio::main]
 async fn main() {
-    dotenv().ok();
+    dotenv().ok(); // Load .env
 
-    let anytype_url = Url(std::env::var("ANYTYPE_URL").expect("ANYTYPE_URL must be set in .env."));
+    let anytype_url = Url(std::env::var("ANYTYPE_URL").expect("ANYTYPE_URL must be set in .env.")); // Anytype space URL
+    let anytype_token =
+        Token(std::env::var("ANYTYPE_TOKEN").expect("ANYTYPE_TOKEN must be set in .env.")); // Anytype API token
+    let config = AppConfig::from_file("config.toml").unwrap(); // Load config from config.toml
+    let id_map_type = config.anytype_to_matrix_id_map_type; // Anytype object type which contains the "anytype_id" and "matrix_id" properties
 
-    let new_objects = match find_new_objects(&anytype_url).await {
+    let new_objects = match find_new_objects(&anytype_url, &anytype_token).await {
         Ok(data) => data,
         Err(e) => {
-            eprintln!("Errot: find_new_objects failed: {e:#}");
+            eprintln!("Error: find_new_objects failed: {e:#}");
             process::exit(1);
         }
     };
 
-    println!("Found {} new objects", new_objects.data.len());
-    if new_objects.data.is_empty() {
+    println!("Found {} new objects", new_objects.objects.len());
+    // Check if there are no new objects
+    if new_objects.objects.is_empty() {
         println!("Nothing to do, exiting.");
         return;
     }
+
+    // Get mapping for finding matrix user ids by anytype space member ids
+    let matrix_id_map =
+        match get_anytype_to_matrix_map(&anytype_url, &anytype_token, &id_map_type.0).await {
+            Ok(data) => data,
+            Err(e) => {
+                eprintln!("Error: can not get anytype to matrix id mapping: {e:#}");
+                process::exit(1);
+            }
+        };
 
     let matrix_server =
         Url(std::env::var("MATRIX_SERVER").expect("MATRIX_SERVER must be set in .env."));
@@ -62,19 +82,28 @@ async fn main() {
     let room_id =
         RoomId(std::env::var("MATRIX_ROOM_ID").expect("MATRIX_ROOM_ID must be set in .env."));
 
-    for o in &new_objects.data {
+    // Create and send notifications for all new objects
+    for o in &new_objects.objects {
         let name = &o.name;
-        let snippet = o.snippet.as_deref().unwrap_or("<no snippet>");
-
-        let date = o
-            .properties
+        let snippet = &o.snippet;
+        let creation_date = &o.creation_date;
+        let due_date = &o.due_date;
+        // Get matrix user ids using mapping
+        let assignee = &o
+            .assignee
             .iter()
-            .find(|p| p.key == "created_date")
-            .and_then(|p| p.date.as_deref())
-            .unwrap_or("<no creation date>");
+            .map(|a| find_matrix_user_id(&matrix_id_map, a.as_str()))
+            .collect::<Vec<String>>()
+            .join(", ");
+        let proposed_by = &o
+            .proposed_by
+            .iter()
+            .map(|p| find_matrix_user_id(&matrix_id_map, p.as_str()))
+            .collect::<Vec<String>>()
+            .join(", ");
 
         let message = format!(
-            "Обнаружена новая задача:\n{name}\n\nДетали: {snippet}\n\nДата создания: {date}"
+            "От {proposed_by} поступила новая задача:\n{name}\n\n{snippet}\n\n{assignee}\n\nДата создания: {creation_date}\nДедлайн: {due_date}"
         );
 
         match matrix_client
@@ -88,9 +117,8 @@ async fn main() {
                 process::exit(1);
             }
         };
-        println!("name: {name}");
-        println!("snippet: {snippet}");
-        println!("creation date: {date}");
+        println!("Notification text:");
+        println!("{message}");
         println!();
     }
 }
