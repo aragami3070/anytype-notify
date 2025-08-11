@@ -3,6 +3,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      platforms: 
+        - "linux/amd64"
     container_name: anytype-notifier
     restart: unless-stopped
     volumes:
