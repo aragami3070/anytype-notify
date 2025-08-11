@@ -11,7 +11,7 @@ use crate::{
     },
 };
 
-fn formatting_message(
+fn format_message(
     notification: NotificationObject,
     matrix_id_map: &AnytypeToMatrixIdMap,
 ) -> String {
@@ -47,7 +47,7 @@ pub async fn send_message(
     room_id: &RoomId,
     device_id: &DeviceId,
 ) -> Result<(), Box<dyn Error>> {
-    let message = formatting_message(notification, matrix_id_map);
+    let message = format_message(notification, matrix_id_map);
 
     matrix_client
         .room()
