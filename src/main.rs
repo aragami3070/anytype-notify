@@ -42,8 +42,8 @@ async fn main() {
 
     let new_objects = match find_new_objects(&anytype_env.url, &anytype_env.token).await {
         Ok(data) => data,
-        Err(e) => {
-            eprintln!("Error: find_new_objects failed: {e:#}");
+        Err(err) => {
+            eprintln!("Error: find_new_objects failed: {err:#}");
             process::exit(1);
         }
     };
@@ -60,8 +60,8 @@ async fn main() {
         match get_anytype_to_matrix_map(&anytype_env.url, &anytype_env.token, &id_map_type.0).await
         {
             Ok(data) => data,
-            Err(e) => {
-                eprintln!("Error: can not get anytype to matrix id mapping: {e:#}");
+            Err(err) => {
+                eprintln!("Error: can not get anytype to matrix id mapping: {err:#}");
                 process::exit(1);
             }
         };
@@ -73,16 +73,16 @@ async fn main() {
 
     let matrix_client = match set_client(matrix_env.server).await {
         Ok(cl) => cl,
-        Err(message) => {
-            eprintln!("Error: {message}");
+        Err(err) => {
+            eprintln!("Error: {err}");
             process::exit(1);
         }
     };
 
     let device_id = match matrix_client.auth().who_am_i().await {
         Ok(me) => me,
-        Err(message) => {
-            eprintln!("Error: {message}");
+        Err(err) => {
+            eprintln!("Error: {err}");
             process::exit(1);
         }
     }
