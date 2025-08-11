@@ -11,21 +11,24 @@ use crate::{
     },
 };
 
-fn formatting_message(notify: NotificationObject, matrix_id_map: &AnytypeToMatrixIdMap) -> String {
-    let name = notify.name;
-    let snippet = notify.snippet;
-    let creation_date = notify.creation_date;
-    let due_date = notify.due_date;
+fn formatting_message(
+    notification: NotificationObject,
+    matrix_id_map: &AnytypeToMatrixIdMap,
+) -> String {
+    let name = notification.name;
+    let snippet = notification.snippet;
+    let creation_date = notification.creation_date;
+    let due_date = notification.due_date;
 
     // Get matrix user ids using mapping
-    let assignee = notify
+    let assignee = notification
         .assignee
         .iter()
         .map(|a| find_matrix_user_id(matrix_id_map, a.as_str()))
         .collect::<Vec<String>>()
         .join(", ");
 
-    let proposed_by = notify
+    let proposed_by = notification
         .proposed_by
         .iter()
         .map(|p| find_matrix_user_id(matrix_id_map, p.as_str()))
@@ -38,13 +41,13 @@ fn formatting_message(notify: NotificationObject, matrix_id_map: &AnytypeToMatri
 }
 
 pub async fn send_message(
-    notify: NotificationObject,
+    notification: NotificationObject,
     matrix_id_map: &AnytypeToMatrixIdMap,
     matrix_client: &Client,
     room_id: &RoomId,
     device_id: &DeviceId,
 ) -> Result<(), Box<dyn Error>> {
-    let message = formatting_message(notify, matrix_id_map);
+    let message = formatting_message(notification, matrix_id_map);
 
     matrix_client
         .room()
