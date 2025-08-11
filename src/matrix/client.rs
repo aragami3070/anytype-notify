@@ -14,7 +14,7 @@ use crate::{Token, Url, matrix::api};
 #[derive(Clone)]
 pub struct User(pub String);
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct RoomId(pub String);
 
 #[derive(Clone)]

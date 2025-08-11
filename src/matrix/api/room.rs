@@ -13,6 +13,8 @@ use crate::matrix::{
 pub struct MessageBody {
     pub body: String,
     pub msgtype: String,
+    pub format: String,
+    pub formatted_body: String,
 }
 
 #[allow(dead_code)]
@@ -55,8 +57,10 @@ impl Room {
         );
 
         let body = MessageBody {
-            body: text,
-            msgtype: "m.text".to_owned(),
+            body: "".to_string(),
+            msgtype: "m.text".to_string(),
+            format: "org.matrix.custom.html".to_string(),
+            formatted_body: text.to_string(),
         };
 
         let response = self.client.put(path.trim(), headers, body).await?;
