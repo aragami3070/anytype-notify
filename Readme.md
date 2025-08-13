@@ -1,5 +1,14 @@
 # Anytype Notify
 Уведомления о новых объектах созданных в workspace в Anytype.
+<details>
+	<summary>Table of Contents</summary>
+
+* [Зависимости](#Зависимости)
+* [Установка](#Установка)
+* [Запуск](#Запуск)
+* [Внести свой вклад](#Внести-свой-вклад)
+* [Лицензия](#Лицензия)
+</details>
 
 ## Зависимости
 - Anytype
@@ -29,3 +38,11 @@ sudo docker-compose up --no-start
 ```bash
 sudo docker start anytype-notifier
 ```
+
+## Внести свой вклад
+
+Смотрите [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## Лицензия
+
+[License](License)
