@@ -1,7 +1,7 @@
 # Anytype Notify
 Уведомления о новых объектах созданных в workspace в Anytype.
 <details>
-	<summary>Table of Contents</summary>
+	<summary>Содержание</summary>
 
 * [Зависимости](#Зависимости)
 * [Установка](#Установка)
