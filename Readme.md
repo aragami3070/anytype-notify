@@ -20,7 +20,7 @@ Notifications for new Anytype objects in the workspace via Matrix
 - Systemd (or write your own realisation of [socat.sh](./scripts/socat.sh) for socat autostart on boot)
 
 ## Installation
-```bash
+```sh
 git clone git@github.com:aragami3070/anytype-notify.git
 cd anytype-notify
 ```

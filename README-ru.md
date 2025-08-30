@@ -14,30 +14,32 @@ Change language: [English](./README.md)
 
 ## Зависимости
 - Anytype
-- Docker-compose
+- Docker или docker-compose
 - Аккаунт в matrix.org (или self-hosted matrix)
+- Аккаунт в [matrix.org](https://matrix.org) (или self-hosted matrix)
 - [Socat](https://github.com/3ndG4me/socat)
-- Systemd (либо перепишите script/socat.sh на что-то другое, для автоматического запуска socat)
+- Systemd (либо перепишите [socat.sh](./scripts/socat.sh) на что-то другое, для автоматического запуска socat)
 
 ## Установка
-```bash
+```sh
 git clone git@github.com:aragami3070/anytype-notify.git
 cd anytype-notify
 ```
 
 
 ## Запуск
-- Заполните необходимые переменные в файле .env, пример можно посмотреть в [.env.example](https://github.com/aragami3070/anytype-notify/blob/master/.env.example)
-- Укажите как часто нужно проверять новые объекты в Anytype в файле config.toml
-- Укажите как типы объектов нужно проверять в Anytype в файле config.toml
+- Создайте .env файл:
+```sh
+cp .env.example .env
+```
+- Заполните .env вашими данными
+- Укажите как часто нужно проверять новые объекты в Anytype и какой тип имеют обекты с сопоставлением Anytype ID к Matrix ID в [config.toml](./config.toml)
 - Поднимите контейнер из docker-compose.yaml
-
-```bash
+```sh
 sudo docker-compose up --no-start 
 ```
 - Запустите контейнер
-
-```bash
+```sh
 sudo docker start anytype-notifier
 ```
 
