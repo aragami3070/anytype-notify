@@ -112,7 +112,7 @@ async fn process_new_object(
 }
 
 /// Find Anytype objects with creation date after last check
-pub async fn find_new_objects(
+pub async fn find_objects_needed_notify(
     anytype_url: &Url,
     anytype_token: &Token,
 ) -> Result<Notifications, Box<dyn Error>> {
@@ -128,6 +128,23 @@ pub async fn find_new_objects(
 
     let mut cached_objects = load_from_cache(cache_path).await?;
 
+    let objects_to_notify: Vec<NotificationObject> = get_new_objects(&current_objects, &mut cached_objects).await?;
+
+    // Save updated cache
+    if let Err(e) = save_to_cache(cache_path, &cached_objects).await {
+        eprintln!("Failed to save cache: {e}");
+    }
+
+    Ok(Notifications {
+        objects: objects_to_notify,
+    })
+}
+
+/// Get new Anytype objects
+async fn get_new_objects(
+    current_objects: &ApiResponse,
+    cached_objects: &mut AnytypeCache,
+) -> Result<Vec<NotificationObject>, Box<dyn Error>> {
     let mut objects_to_notify: Vec<NotificationObject> = Vec::new();
 
     // Compare current objects with cached and find unnotified objects with enabled notifications
@@ -155,20 +172,12 @@ pub async fn find_new_objects(
                     id,
                     notify_flag,
                     &notification_object,
-                    &mut cached_objects,
+                    cached_objects,
                     &mut objects_to_notify,
                 )
                 .await
             }
         }
     }
-
-    // Save updated cache
-    if let Err(e) = save_to_cache(cache_path, &cached_objects).await {
-        eprintln!("Failed to save cache: {e}");
-    }
-
-    Ok(Notifications {
-        objects: objects_to_notify,
-    })
+    Ok(objects_to_notify)
 }

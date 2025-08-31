@@ -4,7 +4,7 @@ mod dotenv_vars;
 mod matrix;
 
 use crate::{
-    anytype::{parser::get_anytype_to_matrix_map, sentinel::find_new_objects},
+    anytype::{parser::get_anytype_to_matrix_map, sentinel::find_objects_needed_notify},
     config::AppConfig,
     matrix::{client::set_client, messages},
 };
@@ -40,7 +40,7 @@ async fn main() {
     // Anytype object type which contains the "anytype_id" and "matrix_id" properties
     let id_map_type = config.anytype_to_matrix_id_map_type;
 
-    let new_objects = match find_new_objects(&anytype_env.url, &anytype_env.token).await {
+    let new_objects = match find_objects_needed_notify(&anytype_env.url, &anytype_env.token).await {
         Ok(data) => data,
         Err(err) => {
             eprintln!("Error: find_new_objects failed: {err:#}");
