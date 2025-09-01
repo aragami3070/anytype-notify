@@ -134,7 +134,8 @@ async fn process_new_object(
 pub async fn find_objects_needed_notify(
     anytype_url: &Url,
     anytype_token: &Token,
-) -> Result<Option<Notifications>, Box<dyn Error>> {
+    days: Days,
+) -> Result<(Option<Notifications>, Option<Notifications>), Box<dyn Error>> {
     let cache_path = "assets/cache.json";
 
     let current_objects = get_anytype_objects(anytype_url, anytype_token).await?;
@@ -143,7 +144,7 @@ pub async fn find_objects_needed_notify(
     if !Path::new(cache_path).exists() {
         println!("Cache not found. Saving current objects and exiting.");
         set_initial_cache(current_objects, cache_path).await?;
-        return Ok(None);
+        return Ok((None, None));
     }
 
     let mut cached_objects = load_from_cache(cache_path).await?;
@@ -151,11 +152,21 @@ pub async fn find_objects_needed_notify(
     let new_objects: Vec<NotificationObject> =
         get_new_objects(&current_objects, &mut cached_objects).await?;
 
+    let renotify_objects: Vec<NotificationObject> =
+        get_objects_for_renotify(&current_objects, &mut cached_objects, days).await?;
 
     // Save updated cache
     if let Err(e) = save_to_cache(cache_path, &cached_objects).await {
         eprintln!("Failed to save cache: {e}");
     }
+
+    let renotifications = if renotify_objects.is_empty() {
+        None
+    } else {
+        Some(Notifications {
+            objects: renotify_objects,
+        })
+    };
 
     let new_notifications = if new_objects.is_empty() {
         None
@@ -165,7 +176,7 @@ pub async fn find_objects_needed_notify(
         })
     };
 
-    Ok(new_notifications)
+    Ok((new_notifications, renotifications))
 }
 
 /// Get new Anytype objects
@@ -205,6 +216,44 @@ async fn get_new_objects(
                 )
                 .await
             }
+        }
+    }
+    Ok(objects_to_notify)
+}
+
+/// Get new Anytype objects
+async fn get_objects_for_renotify(
+    current_objects: &ApiResponse,
+    cached_objects: &mut AnytypeCache,
+    days: Days,
+) -> Result<Vec<NotificationObject>, Box<dyn Error>> {
+    let mut objects_to_notify: Vec<NotificationObject> = Vec::new();
+    let days_to_sec: u64 = 24 * 60 * 60;
+
+    // Compare current objects with cached and find objects which need to renotify
+    for o in &current_objects.data {
+        let id = &o.id;
+        let notify_flag = o.is_notify_enabled();
+
+        // if this object not need notify then skip
+        if !notify_flag {
+            continue;
+        }
+
+        // Create notification content
+        let notification_object = NotificationObject::new(o)?;
+        let time_now = SystemTime::now();
+
+        match cached_objects.objects.get_mut(id) {
+            Some(obj) => {
+                if time_now.duration_since(obj.notified_in_time)?
+                    >= Duration::from_secs(days * days_to_sec)
+                    && notification_object.assignee.is_empty()
+                {
+                    process_renotify_object(obj, &notification_object, &mut objects_to_notify).await
+                }
+            }
+            None => {}
         }
     }
     Ok(objects_to_notify)
