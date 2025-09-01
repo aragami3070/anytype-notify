@@ -12,6 +12,9 @@ pub struct AppConfig {
     // Interval of checking for new objects
     #[allow(dead_code)]
     pub interval_minutes: i64,
+
+    // Interval of checking for old objects for renotify
+	pub interval_days: u64
 }
 
 impl AppConfig {
