@@ -4,7 +4,11 @@ mod dotenv_vars;
 mod matrix;
 
 use crate::{
-    anytype::{parser::get_anytype_to_matrix_map, sentinel::find_objects_needed_notify},
+    anytype::{
+        entities::notification::Notifications,
+        parser::get_anytype_to_matrix_map,
+        sentinel::{Days, find_objects_needed_notify},
+    },
     config::AppConfig,
     matrix::{client::set_client, messages},
 };
@@ -39,21 +43,16 @@ async fn main() {
 
     // Anytype object type which contains the "anytype_id" and "matrix_id" properties
     let id_map_type = config.anytype_to_matrix_id_map_type;
+    let days: Days = config.interval_days;
 
-    let new_objects = match find_objects_needed_notify(&anytype_env.url, &anytype_env.token).await {
-        Ok(data) => data,
-        Err(err) => {
-            eprintln!("Error: find_new_objects failed: {err:#}");
-            process::exit(1);
-        }
-    };
-
-    println!("Found {} new objects", new_objects.objects.len());
-    // Check if there are no new objects
-    if new_objects.objects.is_empty() {
-        println!("Nothing to do, exiting.");
-        return;
-    }
+    let (new_objects, renotify_objects) =
+        match find_objects_needed_notify(&anytype_env.url, &anytype_env.token, days).await {
+            Ok(data) => data,
+            Err(err) => {
+                eprintln!("Error: find_new_objects failed: {err:#}");
+                process::exit(1);
+            }
+        };
 
     // Get mapping for finding matrix user ids by anytype space member ids
     let matrix_id_map =
@@ -88,9 +87,49 @@ async fn main() {
     }
     .device_id;
 
+    // Check if there are new objects
+    let new_notifications = if new_objects.is_some() {
+        new_objects.unwrap()
+    } else {
+        println!("Not new objects");
+        Notifications { objects: vec![] }
+    };
+    if !new_notifications.objects.is_empty() {
+        println!("Found {} new objects", new_notifications.objects.len());
+    }
+
     // Create and send notifications for all new objects
-    for object in new_objects.objects {
+    for object in new_notifications.objects {
         match messages::send_message(
+            object,
+            &matrix_id_map,
+            &matrix_client,
+            &matrix_env.room_id,
+            &device_id,
+        )
+        .await
+        {
+            Ok(_) => {}
+            Err(err) => {
+                eprintln!("Error: {err}");
+                process::exit(1);
+            }
+        }
+    }
+
+    // Check if there are renotify objects
+    let renotifications = if renotify_objects.is_some() {
+        renotify_objects.unwrap()
+    } else {
+        println!("Not ignored objects");
+        return;
+    };
+
+    println!("Found {} ignored objects", renotifications.objects.len());
+
+    // Create and send notifications for all renotify objects
+    for object in renotifications.objects {
+        match messages::send_renotify_message(
             object,
             &matrix_id_map,
             &matrix_client,
