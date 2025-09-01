@@ -244,16 +244,13 @@ async fn get_objects_for_renotify(
         let notification_object = NotificationObject::new(o)?;
         let time_now = SystemTime::now();
 
-        match cached_objects.objects.get_mut(id) {
-            Some(obj) => {
-                if time_now.duration_since(obj.notified_in_time)?
-                    >= Duration::from_secs(days * days_to_sec)
-                    && notification_object.assignee.is_empty()
-                {
-                    process_renotify_object(obj, &notification_object, &mut objects_to_notify).await
-                }
+        if let Some(obj) = cached_objects.objects.get_mut(id) {
+            if time_now.duration_since(obj.notified_in_time)?
+                >= Duration::from_secs(days * days_to_sec)
+                && notification_object.assignee.is_empty()
+            {
+                process_renotify_object(obj, &notification_object, &mut objects_to_notify).await
             }
-            None => {}
         }
     }
     Ok(objects_to_notify)
