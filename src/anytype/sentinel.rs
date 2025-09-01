@@ -14,7 +14,10 @@ use std::{
     error::Error,
     fs::{self, File},
     path::Path,
+    time::{Duration, SystemTime},
 };
+
+pub type Days = u64;
 
 /// Cache Anytype objects in a file for find objects to notify in future checks
 async fn save_to_cache(path: &str, objects: &AnytypeCache) -> std::io::Result<()> {
@@ -41,7 +44,7 @@ async fn load_from_cache(path: &str) -> Result<AnytypeCache, Box<dyn Error>> {
 async fn set_initial_cache(
     current_objects: ApiResponse,
     cache_path: &str,
-) -> Result<Notifications, Box<dyn Error>> {
+) -> Result<(), Box<dyn Error>> {
     let mut initial_cache = AnytypeCache::default();
 
     for o in &current_objects.data {
@@ -57,6 +60,7 @@ async fn set_initial_cache(
                 notified: notify_flag,
                 assignee,
                 proposed_by,
+                notified_in_time: SystemTime::now(),
             },
         );
     }
@@ -65,7 +69,7 @@ async fn set_initial_cache(
         eprintln!("Failed to save initial cache: {e}");
     }
 
-    Ok(Notifications { objects: vec![] })
+    Ok(())
 }
 
 async fn process_cached_object(
@@ -90,6 +94,20 @@ async fn process_cached_object(
     object.proposed_by = notification_object.proposed_by.clone();
 }
 
+async fn process_renotify_object(
+    object: &mut CachedObject,
+    notification_object: &NotificationObject,
+    objects_to_notify: &mut Vec<NotificationObject>,
+) {
+    // Object is need renotification
+    objects_to_notify.push(notification_object.clone());
+
+    // Update the other fields
+    object.assignee = notification_object.assignee.clone();
+    object.proposed_by = notification_object.proposed_by.clone();
+    object.notified_in_time = SystemTime::now();
+}
+
 async fn process_new_object(
     id: &str,
     notify_flag: bool,
@@ -102,6 +120,7 @@ async fn process_new_object(
         notified: notify_flag,
         assignee: notification_object.assignee.clone(),
         proposed_by: notification_object.proposed_by.clone(),
+        notified_in_time: SystemTime::now(),
     };
 
     if notify_flag {
@@ -115,7 +134,7 @@ async fn process_new_object(
 pub async fn find_objects_needed_notify(
     anytype_url: &Url,
     anytype_token: &Token,
-) -> Result<Notifications, Box<dyn Error>> {
+) -> Result<Option<Notifications>, Box<dyn Error>> {
     let cache_path = "assets/cache.json";
 
     let current_objects = get_anytype_objects(anytype_url, anytype_token).await?;
@@ -123,21 +142,30 @@ pub async fn find_objects_needed_notify(
     // At the first run create initial cache and exit
     if !Path::new(cache_path).exists() {
         println!("Cache not found. Saving current objects and exiting.");
-        return set_initial_cache(current_objects, cache_path).await;
+        set_initial_cache(current_objects, cache_path).await?;
+        return Ok(None);
     }
 
     let mut cached_objects = load_from_cache(cache_path).await?;
 
-    let objects_to_notify: Vec<NotificationObject> = get_new_objects(&current_objects, &mut cached_objects).await?;
+    let new_objects: Vec<NotificationObject> =
+        get_new_objects(&current_objects, &mut cached_objects).await?;
+
 
     // Save updated cache
     if let Err(e) = save_to_cache(cache_path, &cached_objects).await {
         eprintln!("Failed to save cache: {e}");
     }
 
-    Ok(Notifications {
-        objects: objects_to_notify,
-    })
+    let new_notifications = if new_objects.is_empty() {
+        None
+    } else {
+        Some(Notifications {
+            objects: new_objects,
+        })
+    };
+
+    Ok(new_notifications)
 }
 
 /// Get new Anytype objects
