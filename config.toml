@@ -1,7 +1,7 @@
 interval_minutes = 1
 
 # How often to resend ignored notifications (ignored by people, not assigned)
-interval_days = 1
+interval_days = 7
 
 # Type of the objects in Anytype that contain the following Properties:
 # "Anytype ID" with type "Object" (space member)
