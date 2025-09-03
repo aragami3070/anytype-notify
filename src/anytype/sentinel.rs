@@ -130,8 +130,9 @@ async fn process_new_object(
     cached_objects.objects.insert(id.to_string(), cached_object);
 }
 
-/// Find Anytype objects with creation date after last check
-pub async fn find_objects_needed_notify(
+/// Find Anytype objects with creation date after last check and
+/// objects that already existed, but need to notification again.
+pub async fn find_objects_to_notify(
     anytype_url: &Url,
     anytype_token: &Token,
     days: Days,
@@ -221,7 +222,7 @@ async fn get_new_objects(
     Ok(objects_to_notify)
 }
 
-/// Get new Anytype objects
+/// Get Anytype objects that already existed, but need to to notification again.
 async fn get_objects_for_renotify(
     current_objects: &ApiResponse,
     cached_objects: &mut AnytypeCache,

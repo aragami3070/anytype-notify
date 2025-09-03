@@ -7,7 +7,7 @@ use crate::{
     anytype::{
         entities::notification::Notifications,
         parser::get_anytype_to_matrix_map,
-        sentinel::{Days, find_objects_needed_notify},
+        sentinel::{Days, find_objects_to_notify},
     },
     config::AppConfig,
     matrix::{client::set_client, messages},
@@ -46,7 +46,7 @@ async fn main() {
     let days: Days = config.interval_days;
 
     let (new_objects, renotify_objects) =
-        match find_objects_needed_notify(&anytype_env.url, &anytype_env.token, days).await {
+        match find_objects_to_notify(&anytype_env.url, &anytype_env.token, days).await {
             Ok(data) => data,
             Err(err) => {
                 eprintln!("Error: find_new_objects failed: {err:#}");
