@@ -11,7 +11,7 @@ use crate::{
     },
 };
 
-fn format_message(
+fn format_notify_message(
     notification: NotificationObject,
     matrix_id_map: &AnytypeToMatrixIdMap,
 ) -> String {
@@ -47,7 +47,56 @@ pub async fn send_message(
     room_id: &RoomId,
     device_id: &DeviceId,
 ) -> Result<(), Box<dyn Error>> {
-    let message = format_message(notification, matrix_id_map);
+    let message = format_notify_message(notification, matrix_id_map);
+
+    matrix_client
+        .room()
+        .send_message(room_id, device_id, message.clone())
+        .await?;
+
+    println!("Notification text:");
+    println!("{message}");
+    println!();
+    Ok(())
+}
+
+fn format_renotify_message(
+    notification: NotificationObject,
+    matrix_id_map: &AnytypeToMatrixIdMap,
+) -> String {
+    let name = notification.name;
+    let snippet = notification.snippet;
+    let creation_date = notification.creation_date;
+    let due_date = notification.due_date;
+
+    // Get matrix user ids using mapping
+    let assignee = notification
+        .assignee
+        .iter()
+        .map(|a| find_matrix_user_id(matrix_id_map, a.as_str()))
+        .collect::<Vec<String>>()
+        .join(", ");
+
+    let proposed_by = notification
+        .proposed_by
+        .iter()
+        .map(|p| find_matrix_user_id(matrix_id_map, p.as_str()))
+        .collect::<Vec<String>>()
+        .join(", ");
+
+    format!(
+        "От {proposed_by} повторное уведомление о задаче:\n{name}\n\n{snippet}\n\n{assignee}\n\nДата создания: {creation_date}\nДедлайн: {due_date}",
+    )
+}
+
+pub async fn send_renotify_message(
+    notification: NotificationObject,
+    matrix_id_map: &AnytypeToMatrixIdMap,
+    matrix_client: &Client,
+    room_id: &RoomId,
+    device_id: &DeviceId,
+) -> Result<(), Box<dyn Error>> {
+    let message = format_renotify_message(notification, matrix_id_map);
 
     matrix_client
         .room()

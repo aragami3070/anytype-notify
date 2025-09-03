@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::{collections::HashMap, time::SystemTime};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CachedObject {
@@ -7,6 +7,7 @@ pub struct CachedObject {
     pub notified: bool,
     pub proposed_by: Vec<String>,
     pub assignee: Vec<String>,
+    pub notified_in_time: SystemTime,
 }
 
 #[derive(Debug, Serialize, Deserialize, Default)]
