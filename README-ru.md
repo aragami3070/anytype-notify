@@ -6,7 +6,12 @@ Change language: [English](./README.md)
 	<summary>Содержание</summary>
 
 * [Зависимости](#Зависимости)
-* [Установка](#Установка)
+* [Первые шаги](#Первые-шаги)
+    * [Настройка Anytype](#Настройка-Anytype)
+    * [Настройка Matrix](#Настройка-Matrix)
+    * [Установка](#Установка)
+    * [Настройка сервиса](#Настройка-сервиса)
+    * [Запуск](#Запуск)
 * [Запуск](#Запуск)
 * [Внести свой вклад](#Внести-свой-вклад)
 * [Лицензия](#Лицензия)
@@ -38,7 +43,7 @@ chmod +x Anytype.AppImage
         - "Notify" с типом Checkbox
         - "Proposed by" с типом Object и в Limit Objects Types выставленным типом "Space member"  
         - "Assignee" с типом Object и в Limit Objects Types выставленным типом "Space member"
-            Пример: ![[./examples/Task-Properties.png]]
+            Пример: ![Task-Properties](./examples/Task-Properties.png)
         - "Due date" с типом Date
 - "Matrix Member"
     - Объекты для сопоставления Space member, указанного в полях "Proposed by" и "Assignee" с Matrix ID этого пользователя, который должен иметь следующие поля:
@@ -58,7 +63,7 @@ git clone git@github.com:aragami3070/anytype-notify.git
 cd anytype-notify
 ```
 
-### Настройка
+### Настройка сервиса
 - Создайте .env файл в корне проекта:
 ```sh
 cp .env.example .env
