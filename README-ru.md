@@ -1,7 +1,7 @@
 # Anytype Notify
 Change language: [English](./README.md)
 
-Уведомления о новых объектах созданных в workspace в Anytype.
+Уведомления в Matrix о новых объектах, созданных в workspace в Anytype.
 <details>
 	<summary>Содержание</summary>
 
@@ -39,18 +39,22 @@ chmod +x Anytype.AppImage
 
 Также в спейсе Anytype потребуется создать следующие типы объектов:
 - "Task"
-    - Объекты с названием и описанием задачи, который должен иметь следующие поля:
-        - "Notify" с типом Checkbox
+    - Объекты с названием и описанием задачи. 
+    - Тип должен иметь следующие поля:
+        - "Notify" с типом Checkbox (при установке в true сервис будет присылать о нём уведомление)
         - "Proposed by" с типом Object и в Limit Objects Types выставленным типом "Space member"  
-        - "Assignee" с типом Object и в Limit Objects Types выставленным типом "Space member"
+        - "Assignee" с типом Object и в Limit Objects Types выставленным типом "Space member".
+
             Пример: 
-            <img src="./examples/Task-Properties.png" width="400">
+            <img src="./examples/Task-Properties.png" width="300">
         - "Due date" с типом Date
 - "Matrix Member"
-    - Объекты для сопоставления Space member, указанного в полях "Proposed by" и "Assignee" с Matrix ID этого пользователя, который должен иметь следующие поля:
+    - Объекты для сопоставления Space member, указанного в полях "Proposed by" и "Assignee" с Matrix ID этого пользователя. 
+    - Тип должен иметь следующие поля:
         - "Anytype ID" с типом Object и в Limit Objects Types выставленным типом "Space member"
         - "Matrix ID" с типом Text (в формате @username:matrix.org или @username:your-server.domain)
     - Для корректного отображения желательно создать такие сопоставления для каждого пользователя в вашем спейсе Anytype, у которого имеется Matrix аккаунт
+- Можно создать и другие типы объектов с полем Notify типа Checkbox и о них также будут присылаться уведомления, но часть текста уведомления о них может отображаться некорректно 
 
 ### Настройка Matrix
 Создать бота в вашем Matrix сервере (или [matrix.org](https://matrix.org)). Ботом в этом случае является самый обычный аккаунт.
