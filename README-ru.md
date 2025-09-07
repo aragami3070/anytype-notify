@@ -46,6 +46,7 @@ chmod +x Anytype.AppImage
         - "Assignee" с типом Object и в Limit Objects Types выставленным типом "Space member".
 
             Пример: 
+
             <img src="./examples/Task-Properties.png" width="300">
         - "Due date" с типом Date
 - "Matrix Member"
