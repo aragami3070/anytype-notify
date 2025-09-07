@@ -43,7 +43,7 @@ chmod +x Anytype.AppImage
         - "Notify" с типом Checkbox
         - "Proposed by" с типом Object и в Limit Objects Types выставленным типом "Space member"  
         - "Assignee" с типом Object и в Limit Objects Types выставленным типом "Space member"
-            Пример: ![Task-Properties](./examples/Task-Properties.png)
+            Пример: <img src="./examples/Task-Properties.png" width="150">
         - "Due date" с типом Date
 - "Matrix Member"
     - Объекты для сопоставления Space member, указанного в полях "Proposed by" и "Assignee" с Matrix ID этого пользователя, который должен иметь следующие поля:
