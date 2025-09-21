@@ -12,6 +12,7 @@ pub enum NotificationType {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NotificationObject {
+    pub id: String,
     pub name: String,
     pub snippet: String,
     pub creation_date: String,
@@ -27,6 +28,7 @@ impl NotificationObject {
         notification_type: NotificationType,
     ) -> Result<Self, Box<dyn Error>> {
         Ok(Self {
+            id: object.id.clone(),
             name: object.name.clone(),
             snippet: object
                 .snippet

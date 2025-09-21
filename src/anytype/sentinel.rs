@@ -81,7 +81,12 @@ async fn process_cached_object(
 ) {
     if notify_flag && !object.notified {
         // Object is not already notified and need notification
-        objects_to_notify.push(notification_object.clone());
+        if !objects_to_notify // Check if object is already in the list
+            .iter()
+            .any(|o| o.id == notification_object.id)
+        {
+            objects_to_notify.push(notification_object.clone());
+        }
         object.notify = true;
         object.notified = true;
     } else if !notify_flag {
@@ -101,7 +106,12 @@ async fn process_renotify_object(
     objects_to_notify: &mut Vec<NotificationObject>,
 ) {
     // Object is need renotification
-    objects_to_notify.push(notification_object.clone());
+    if !objects_to_notify // Check if object is already in the list
+        .iter()
+        .any(|o| o.id == notification_object.id)
+    {
+        objects_to_notify.push(notification_object.clone());
+    }
 
     // Update the other fields
     object.assignee = notification_object.assignee.clone();
@@ -124,7 +134,11 @@ async fn process_new_object(
         notified_in_time: SystemTime::now(),
     };
 
-    if notify_flag {
+    if notify_flag
+        && !objects_to_notify // Check if object is already in the list
+            .iter()
+            .any(|o| o.id == notification_object.id)
+    {
         objects_to_notify.push(notification_object.clone());
     }
 
@@ -239,12 +253,11 @@ async fn get_objects_for_renotify(
         }
 
         // Create notification content
-        let notification_object = NotificationObject::new(o, NotificationType::New)?;
-
         if let Some(obj) = cached_objects.objects.get_mut(id) {
-            check_unassigned(obj, &notification_object, objects_to_notify, config).await?;
-            check_deadline_upcoming(o, obj, &notification_object, objects_to_notify, config)
-                .await?;
+            if obj.notified {
+                check_unassigned(o, obj, objects_to_notify, config).await?;
+                check_deadline_upcoming(o, obj, objects_to_notify, config).await?;
+            }
         }
     }
 
@@ -252,8 +265,8 @@ async fn get_objects_for_renotify(
 }
 
 async fn check_unassigned(
-    obj: &mut CachedObject,
-    notification_object: &NotificationObject,
+    object: &AnytypeObject,
+    cached_object: &mut CachedObject,
     objects_to_notify: &mut Vec<NotificationObject>,
     config: &AppConfig,
 ) -> Result<(), Box<dyn Error>> {
@@ -261,11 +274,13 @@ async fn check_unassigned(
     let days_to_sec: u64 = 24 * 60 * 60;
     let time_now = SystemTime::now();
 
-    if time_now.duration_since(obj.notified_in_time)?
+    let notification_object = NotificationObject::new(object, NotificationType::Unassigned)?;
+
+    if time_now.duration_since(cached_object.notified_in_time)?
         >= Duration::from_secs(interval_days * days_to_sec)
         && notification_object.assignee.is_empty()
     {
-        process_renotify_object(obj, notification_object, objects_to_notify).await
+        process_renotify_object(cached_object, &notification_object, objects_to_notify).await
     }
 
     Ok(())
@@ -274,7 +289,6 @@ async fn check_unassigned(
 async fn check_deadline_upcoming(
     object: &AnytypeObject,
     cached_object: &mut CachedObject,
-    notification_object: &NotificationObject,
     objects_to_notify: &mut Vec<NotificationObject>,
     config: &AppConfig,
 ) -> Result<(), Box<dyn Error>> {
@@ -291,7 +305,10 @@ async fn check_deadline_upcoming(
             let time_diff = due_date.with_timezone(&Local) - time_now;
 
             if time_diff.num_seconds() >= 0 && time_diff.num_days() as u64 <= interval_days {
-                process_renotify_object(cached_object, notification_object, objects_to_notify).await
+                let notification_object =
+                    NotificationObject::new(object, NotificationType::UpcomingDeadline)?;
+                process_renotify_object(cached_object, &notification_object, objects_to_notify)
+                    .await
             }
         }
     }
