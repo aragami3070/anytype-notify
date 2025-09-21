@@ -42,8 +42,8 @@ chmod +x Anytype.AppImage
     - Объекты с названием и описанием задачи. 
     - Тип должен иметь следующие поля:
         - "Notify" с типом Checkbox (при установке в true сервис будет присылать о нём уведомление)
-        - "Proposed by" с типом Object и в Limit Objects Types выставленным типом "Space member"  
-        - "Assignee" с типом Object и в Limit Objects Types выставленным типом "Space member".
+        - "Proposed by" с типом Object и в Limit Object Types выставленным типом "Space member"  
+        - "Assignee" с типом Object и в Limit Object Types выставленным типом "Space member".
 
             Пример: 
 
