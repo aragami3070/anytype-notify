@@ -6,6 +6,6 @@ interval_minutes = 1
 anytype_to_matrix_id_map_type = "matrix_member" 
 
 # How often to resend notifications
-[renotify_interval_days]
+[renotify_interval] # in days
 unassigned = 7
 deadline_upcoming = 3
