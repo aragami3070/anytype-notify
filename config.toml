@@ -1,9 +1,11 @@
 interval_minutes = 1
 
-# How often to resend ignored notifications (ignored by people, not assigned)
-interval_days = 7
-
 # Type of the objects in Anytype that contain the following Properties:
 # "Anytype ID" with type "Object" (space member)
 # "Matrix ID" with type "Text"
 anytype_to_matrix_id_map_type = "matrix_member" 
+
+# How often to resend notifications
+[renotify_interval_days]
+unassigned = 7
+deadline_upcoming = 3
