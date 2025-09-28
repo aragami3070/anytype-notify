@@ -35,7 +35,10 @@ chmod +x Anytype.AppImage
 ```
 После установки Anytype может неправильно работать при отсутствии следующих пакетов: `gnome-keyring libsecret-1-dev`. 
 
-Затем нужно создать для этого сервиса отдельный аккаунт (например с именем Notifier) в вашем спейсе Anytype с ролью Viewer, добавить Anytype в автозапуск и включить автоматический вход в систему при старте сервера (иначе Anytype API может не заработать автоматически после включения). Также не забудьте при создании аккаунта в self-hosted спейсе выбрать правильный режим работы Anytype, а также указать ваш файл конфигурации для [Self-hosted](https://doc.anytype.io/anytype-docs/advanced/data-and-security/self-hosting/self-hosted). 
+Затем нужно:
+- Создать для этого сервиса отдельный аккаунт (например с именем Notifier) в вашем спейсе Anytype с ролью Viewer.
+- Добавить Anytype в автозапуск и включить автоматический вход в систему при старте сервера (иначе Anytype API может не заработать автоматически после включения). 
+- Также не забудьте при создании аккаунта в self-hosted спейсе выбрать правильный режим работы Anytype, а также указать ваш файл конфигурации для [Self-hosted](https://doc.anytype.io/anytype-docs/advanced/data-and-security/self-hosting/self-hosted). 
 
 Также в спейсе Anytype потребуется создать следующие типы объектов:
 - "Task"
@@ -84,7 +87,7 @@ cp .env.example .env
     - MATRIX_USER - имя аккаунта, используемого в роли бота
     - MATRIX_PASSWORD - пароль от аккаунта бота
     - MATRIX_ROOM_ID - ID комнаты, куда был добавлен бот, и куда он будет отправлять уведомления
-        - Можно найти в Matrix в Room Settings -> Advanced -> Internal room ID
+        - Можно найти в Matrix клиенте в Room Settings -> Advanced -> Internal room ID
 
 - При надобности измените настройки в файле [config.toml](./config.toml). 
     - Как часто нужно проверять новые объекты в Anytype (в минутах)
@@ -92,16 +95,16 @@ cp .env.example .env
     - С какой частотой присылать повторные напоминания о задаче, если её никто на себя не взял, то есть поле Assignee пусто (в днях)
 
 ### Запуск
-Запустите службу socat для проксирования порта Anytype API, чтобы контейнер мог к нему обращаться:
+- Запустите службу socat для проксирования порта Anytype API, чтобы контейнер мог к нему обращаться:
 ```sh
 chmod +x scripts/socat.sh
 sudo ./scripts/socat.sh
 ```
-- Поднимите контейнер из docker-compose.yaml
+- Поднимите контейнер из docker-compose.yaml:
 ```sh
 sudo docker-compose up --no-start 
 ```
-- Запустите контейнер
+- Запустите контейнер:
 ```sh
 sudo docker start anytype-notifier
 ```
