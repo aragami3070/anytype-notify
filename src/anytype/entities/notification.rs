@@ -4,18 +4,31 @@ use std::{collections::HashMap, error::Error};
 use crate::anytype::entities::api_response::AnytypeObject;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum NotificationType {
+    New,
+    Unassigned,
+    UpcomingDeadline,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NotificationObject {
+    pub id: String,
     pub name: String,
     pub snippet: String,
     pub creation_date: String,
     pub due_date: String,
     pub proposed_by: Vec<String>,
     pub assignee: Vec<String>,
+    pub notification_type: NotificationType,
 }
 
 impl NotificationObject {
-    pub fn new(object: &AnytypeObject) -> Result<Self, Box<dyn Error>> {
+    pub fn new(
+        object: &AnytypeObject,
+        notification_type: NotificationType,
+    ) -> Result<Self, Box<dyn Error>> {
         Ok(Self {
+            id: object.id.clone(),
             name: object.name.clone(),
             snippet: object
                 .snippet
@@ -26,6 +39,7 @@ impl NotificationObject {
             creation_date: object.creation_date(),
             proposed_by: object.proposed_by(),
             assignee: object.assignee(),
+            notification_type,
         })
     }
 }

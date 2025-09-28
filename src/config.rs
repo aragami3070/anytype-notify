@@ -5,6 +5,12 @@ use serde::Deserialize;
 use std::error::Error;
 
 #[derive(Debug, Clone, Deserialize)]
+pub struct RenotifyIntervalDays {
+    pub unassigned: u64,
+    pub deadline_upcoming: u64,
+}
+
+#[derive(Debug, Clone, Deserialize)]
 pub struct AppConfig {
     // The name of the Anytype object type which contains the "anytype_id" and "matrix_id" properties
     pub anytype_to_matrix_id_map_type: AnytypeToMatrixIdMapType,
@@ -14,7 +20,7 @@ pub struct AppConfig {
     pub interval_minutes: i64,
 
     // Interval of checking for old objects for renotify
-	pub interval_days: u64
+    pub renotify_interval: RenotifyIntervalDays,
 }
 
 impl AppConfig {
