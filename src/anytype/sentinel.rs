@@ -253,11 +253,11 @@ async fn get_objects_for_renotify(
         }
 
         // Create notification content
-        if let Some(obj) = cached_objects.objects.get_mut(id) {
-            if obj.notified {
-                check_unassigned(o, obj, objects_to_notify, config).await?;
-                check_deadline_upcoming(o, obj, objects_to_notify, config).await?;
-            }
+        if let Some(obj) = cached_objects.objects.get_mut(id)
+            && obj.notified
+        {
+            check_unassigned(o, obj, objects_to_notify, config).await?;
+            check_deadline_upcoming(o, obj, objects_to_notify, config).await?;
         }
     }
 
@@ -300,16 +300,14 @@ async fn check_deadline_upcoming(
         .iter()
         .find(|p| p.key == "due_date")
         .and_then(|p| p.date.as_deref())
+        && let Ok(due_date) = DateTime::parse_from_rfc3339(due_date_str)
     {
-        if let Ok(due_date) = DateTime::parse_from_rfc3339(due_date_str) {
-            let time_diff = due_date.with_timezone(&Local) - time_now;
+        let time_diff = due_date.with_timezone(&Local) - time_now;
 
-            if time_diff.num_seconds() >= 0 && time_diff.num_days() as u64 <= interval_days {
-                let notification_object =
-                    NotificationObject::new(object, NotificationType::UpcomingDeadline)?;
-                process_renotify_object(cached_object, &notification_object, objects_to_notify)
-                    .await
-            }
+        if time_diff.num_seconds() >= 0 && time_diff.num_days() as u64 <= interval_days {
+            let notification_object =
+                NotificationObject::new(object, NotificationType::UpcomingDeadline)?;
+            process_renotify_object(cached_object, &notification_object, objects_to_notify).await
         }
     }
 
