@@ -2,12 +2,13 @@ use crate::{
     Token, Url,
     anytype::{
         entities::{
-            api_response::ApiResponse,
+            api_response::{AnytypeObject, ApiResponse},
             cache::{AnytypeCache, CachedObject},
-            notification::{NotificationObject, Notifications},
+            notification::{NotificationObject, NotificationType, Notifications},
         },
         parser::get_anytype_objects,
     },
+    config::AppConfig,
 };
 
 use std::{
@@ -17,7 +18,7 @@ use std::{
     time::{Duration, SystemTime},
 };
 
-pub type Days = u64;
+use chrono::{DateTime, Local};
 
 /// Cache Anytype objects in a file for find objects to notify in future checks
 async fn save_to_cache(path: &str, objects: &AnytypeCache) -> std::io::Result<()> {
@@ -80,7 +81,12 @@ async fn process_cached_object(
 ) {
     if notify_flag && !object.notified {
         // Object is not already notified and need notification
-        objects_to_notify.push(notification_object.clone());
+        if !objects_to_notify // Check if object is already in the list
+            .iter()
+            .any(|o| o.id == notification_object.id)
+        {
+            objects_to_notify.push(notification_object.clone());
+        }
         object.notify = true;
         object.notified = true;
     } else if !notify_flag {
@@ -100,7 +106,12 @@ async fn process_renotify_object(
     objects_to_notify: &mut Vec<NotificationObject>,
 ) {
     // Object is need renotification
-    objects_to_notify.push(notification_object.clone());
+    if !objects_to_notify // Check if object is already in the list
+        .iter()
+        .any(|o| o.id == notification_object.id)
+    {
+        objects_to_notify.push(notification_object.clone());
+    }
 
     // Update the other fields
     object.assignee = notification_object.assignee.clone();
@@ -123,7 +134,11 @@ async fn process_new_object(
         notified_in_time: SystemTime::now(),
     };
 
-    if notify_flag {
+    if notify_flag
+        && !objects_to_notify // Check if object is already in the list
+            .iter()
+            .any(|o| o.id == notification_object.id)
+    {
         objects_to_notify.push(notification_object.clone());
     }
 
@@ -135,8 +150,8 @@ async fn process_new_object(
 pub async fn find_objects_to_notify(
     anytype_url: &Url,
     anytype_token: &Token,
-    days: Days,
-) -> Result<(Option<Notifications>, Option<Notifications>), Box<dyn Error>> {
+    config: &AppConfig,
+) -> Result<Option<Notifications>, Box<dyn Error>> {
     let cache_path = "assets/cache.json";
 
     let current_objects = get_anytype_objects(anytype_url, anytype_token).await?;
@@ -145,66 +160,63 @@ pub async fn find_objects_to_notify(
     if !Path::new(cache_path).exists() {
         println!("Cache not found. Saving current objects and exiting.");
         set_initial_cache(current_objects, cache_path).await?;
-        return Ok((None, None));
+        return Ok(None);
     }
 
     let mut cached_objects = load_from_cache(cache_path).await?;
 
-    let new_objects: Vec<NotificationObject> =
-        get_new_objects(&current_objects, &mut cached_objects).await?;
+    let mut objects_to_notify: Vec<NotificationObject> = Vec::new();
 
-    let renotify_objects: Vec<NotificationObject> =
-        get_objects_for_renotify(&current_objects, &mut cached_objects, days).await?;
+    get_new_objects(
+        &current_objects,
+        &mut cached_objects,
+        &mut objects_to_notify,
+    )
+    .await?;
+
+    get_objects_for_renotify(
+        &current_objects,
+        &mut cached_objects,
+        &mut objects_to_notify,
+        config,
+    )
+    .await?;
 
     // Save updated cache
     if let Err(e) = save_to_cache(cache_path, &cached_objects).await {
         eprintln!("Failed to save cache: {e}");
     }
 
-    let renotifications = if renotify_objects.is_empty() {
+    let objects_to_notify = if objects_to_notify.is_empty() {
         None
     } else {
         Some(Notifications {
-            objects: renotify_objects,
+            objects: objects_to_notify,
         })
     };
 
-    let new_notifications = if new_objects.is_empty() {
-        None
-    } else {
-        Some(Notifications {
-            objects: new_objects,
-        })
-    };
-
-    Ok((new_notifications, renotifications))
+    Ok(objects_to_notify)
 }
 
 /// Get new Anytype objects
 async fn get_new_objects(
     current_objects: &ApiResponse,
     cached_objects: &mut AnytypeCache,
-) -> Result<Vec<NotificationObject>, Box<dyn Error>> {
-    let mut objects_to_notify: Vec<NotificationObject> = Vec::new();
-
+    objects_to_notify: &mut Vec<NotificationObject>,
+) -> Result<(), Box<dyn Error>> {
     // Compare current objects with cached and find unnotified objects with enabled notifications
     for o in &current_objects.data {
         let id = &o.id;
         let notify_flag = o.is_notify_enabled();
 
         // Create notification content
-        let notification_object = NotificationObject::new(o)?;
+        let notification_object = NotificationObject::new(o, NotificationType::New)?;
 
         match cached_objects.objects.get_mut(id) {
             Some(obj) => {
                 // Object exists in cache
-                process_cached_object(
-                    obj,
-                    notify_flag,
-                    &notification_object,
-                    &mut objects_to_notify,
-                )
-                .await
+                process_cached_object(obj, notify_flag, &notification_object, objects_to_notify)
+                    .await
             }
             None => {
                 // Object doesn't exist in cache
@@ -213,24 +225,23 @@ async fn get_new_objects(
                     notify_flag,
                     &notification_object,
                     cached_objects,
-                    &mut objects_to_notify,
+                    objects_to_notify,
                 )
                 .await
             }
         }
     }
-    Ok(objects_to_notify)
+
+    Ok(())
 }
 
 /// Get Anytype objects that already existed, but need to to notification again.
 async fn get_objects_for_renotify(
     current_objects: &ApiResponse,
     cached_objects: &mut AnytypeCache,
-    days: Days,
-) -> Result<Vec<NotificationObject>, Box<dyn Error>> {
-    let mut objects_to_notify: Vec<NotificationObject> = Vec::new();
-    let days_to_sec: u64 = 24 * 60 * 60;
-
+    objects_to_notify: &mut Vec<NotificationObject>,
+    config: &AppConfig,
+) -> Result<(), Box<dyn Error>> {
     // Compare current objects with cached and find objects which need to renotify
     for o in &current_objects.data {
         let id = &o.id;
@@ -242,17 +253,63 @@ async fn get_objects_for_renotify(
         }
 
         // Create notification content
-        let notification_object = NotificationObject::new(o)?;
-        let time_now = SystemTime::now();
-
-        if let Some(obj) = cached_objects.objects.get_mut(id) {
-            if time_now.duration_since(obj.notified_in_time)?
-                >= Duration::from_secs(days * days_to_sec)
-                && notification_object.assignee.is_empty()
-            {
-                process_renotify_object(obj, &notification_object, &mut objects_to_notify).await
-            }
+        if let Some(obj) = cached_objects.objects.get_mut(id)
+            && obj.notified
+        {
+            check_unassigned(o, obj, objects_to_notify, config).await?;
+            check_deadline_upcoming(o, obj, objects_to_notify, config).await?;
         }
     }
-    Ok(objects_to_notify)
+
+    Ok(())
+}
+
+async fn check_unassigned(
+    object: &AnytypeObject,
+    cached_object: &mut CachedObject,
+    objects_to_notify: &mut Vec<NotificationObject>,
+    config: &AppConfig,
+) -> Result<(), Box<dyn Error>> {
+    let interval_days = config.renotify_interval.unassigned;
+    let days_to_sec: u64 = 24 * 60 * 60;
+    let time_now = SystemTime::now();
+
+    let notification_object = NotificationObject::new(object, NotificationType::Unassigned)?;
+
+    if time_now.duration_since(cached_object.notified_in_time)?
+        >= Duration::from_secs(interval_days * days_to_sec)
+        && notification_object.assignee.is_empty()
+    {
+        process_renotify_object(cached_object, &notification_object, objects_to_notify).await
+    }
+
+    Ok(())
+}
+
+async fn check_deadline_upcoming(
+    object: &AnytypeObject,
+    cached_object: &mut CachedObject,
+    objects_to_notify: &mut Vec<NotificationObject>,
+    config: &AppConfig,
+) -> Result<(), Box<dyn Error>> {
+    let interval_days = config.renotify_interval.deadline_upcoming;
+    let time_now = Local::now();
+
+    if let Some(due_date_str) = object
+        .properties
+        .iter()
+        .find(|p| p.key == "due_date")
+        .and_then(|p| p.date.as_deref())
+        && let Ok(due_date) = DateTime::parse_from_rfc3339(due_date_str)
+    {
+        let time_diff = due_date.with_timezone(&Local) - time_now;
+
+        if time_diff.num_seconds() >= 0 && time_diff.num_days() as u64 <= interval_days {
+            let notification_object =
+                NotificationObject::new(object, NotificationType::UpcomingDeadline)?;
+            process_renotify_object(cached_object, &notification_object, objects_to_notify).await
+        }
+    }
+
+    Ok(())
 }
